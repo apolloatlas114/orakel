@@ -11,17 +11,17 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-export const userTier = pgEnum("user_tier", ["free", "pro"]);
-export const predictionStatus = pgEnum("prediction_status", ["open", "resolved"]);
-export const marketProvider = pgEnum("market_provider", ["polymarket", "kalshi"]);
-export const signalSourceType = pgEnum("signal_source_type", [
+export const userTier = pgEnum("orakel_user_tier", ["free", "pro"]);
+export const predictionStatus = pgEnum("orakel_prediction_status", ["open", "resolved"]);
+export const marketProvider = pgEnum("orakel_market_provider", ["polymarket", "kalshi"]);
+export const signalSourceType = pgEnum("orakel_signal_source_type", [
   "polymarket",
   "kalshi",
   "x",
   "reddit",
   "rss",
 ]);
-export const executionStatus = pgEnum("execution_status", [
+export const executionStatus = pgEnum("orakel_execution_status", [
   "queued",
   "submitted",
   "failed",
@@ -29,7 +29,7 @@ export const executionStatus = pgEnum("execution_status", [
 ]);
 
 export const users = pgTable(
-  "users",
+  "orakel_users",
   {
     id: uuid("id").defaultRandom().primaryKey(),
     email: text("email").notNull(),
@@ -38,12 +38,12 @@ export const users = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => ({
-    emailUq: uniqueIndex("users_email_uq").on(t.email),
+    emailUq: uniqueIndex("orakel_users_email_uq").on(t.email),
   }),
 );
 
 export const profiles = pgTable(
-  "profiles",
+  "orakel_profiles",
   {
     userId: uuid("user_id")
       .primaryKey()
@@ -56,12 +56,12 @@ export const profiles = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => ({
-    referralUq: uniqueIndex("profiles_referral_code_uq").on(t.referralCode),
+    referralUq: uniqueIndex("orakel_profiles_referral_code_uq").on(t.referralCode),
   }),
 );
 
 export const referrals = pgTable(
-  "referrals",
+  "orakel_referrals",
   {
     id: uuid("id").defaultRandom().primaryKey(),
     referrerUserId: uuid("referrer_user_id")
@@ -74,14 +74,14 @@ export const referrals = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => ({
-    referrerIdx: index("referrals_referrer_idx").on(t.referrerUserId),
-    referredIdx: uniqueIndex("referrals_referred_uq").on(t.referredUserId),
-    codeIdx: index("referrals_code_idx").on(t.code),
+    referrerIdx: index("orakel_referrals_referrer_idx").on(t.referrerUserId),
+    referredIdx: uniqueIndex("orakel_referrals_referred_uq").on(t.referredUserId),
+    codeIdx: index("orakel_referrals_code_idx").on(t.code),
   }),
 );
 
 export const usageLimits = pgTable(
-  "usage_limits",
+  "orakel_usage_limits",
   {
     id: uuid("id").defaultRandom().primaryKey(),
     userId: uuid("user_id")
@@ -94,12 +94,12 @@ export const usageLimits = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => ({
-    uq: uniqueIndex("usage_limits_user_month_uq").on(t.userId, t.month),
+    uq: uniqueIndex("orakel_usage_limits_user_month_uq").on(t.userId, t.month),
   }),
 );
 
 export const predictions = pgTable(
-  "predictions",
+  "orakel_predictions",
   {
     id: uuid("id").defaultRandom().primaryKey(),
     title: text("title").notNull(),
@@ -118,14 +118,14 @@ export const predictions = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => ({
-    providerMarketIdx: uniqueIndex("predictions_provider_market_uq").on(t.provider, t.marketId, t.outcome),
-    statusIdx: index("predictions_status_idx").on(t.status),
-    confIdx: index("predictions_confidence_idx").on(t.confidence),
+    providerMarketIdx: uniqueIndex("orakel_predictions_provider_market_uq").on(t.provider, t.marketId, t.outcome),
+    statusIdx: index("orakel_predictions_status_idx").on(t.status),
+    confIdx: index("orakel_predictions_confidence_idx").on(t.confidence),
   }),
 );
 
 export const predictionSignals = pgTable(
-  "prediction_signals",
+  "orakel_prediction_signals",
   {
     id: uuid("id").defaultRandom().primaryKey(),
     predictionId: uuid("prediction_id")
@@ -137,13 +137,13 @@ export const predictionSignals = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => ({
-    predIdx: index("prediction_signals_prediction_idx").on(t.predictionId),
-    typeIdx: index("prediction_signals_type_idx").on(t.sourceType),
+    predIdx: index("orakel_prediction_signals_prediction_idx").on(t.predictionId),
+    typeIdx: index("orakel_prediction_signals_type_idx").on(t.sourceType),
   }),
 );
 
 export const predictionResults = pgTable(
-  "prediction_results",
+  "orakel_prediction_results",
   {
     id: uuid("id").defaultRandom().primaryKey(),
     predictionId: uuid("prediction_id")
@@ -154,12 +154,12 @@ export const predictionResults = pgTable(
     pnlEstimate: integer("pnl_estimate").default(0).notNull(),
   },
   (t) => ({
-    predUq: uniqueIndex("prediction_results_prediction_uq").on(t.predictionId),
+    predUq: uniqueIndex("orakel_prediction_results_prediction_uq").on(t.predictionId),
   }),
 );
 
 export const apiKeys = pgTable(
-  "api_keys",
+  "orakel_api_keys",
   {
     id: uuid("id").defaultRandom().primaryKey(),
     userId: uuid("user_id")
@@ -172,12 +172,12 @@ export const apiKeys = pgTable(
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
   },
   (t) => ({
-    userProviderUq: uniqueIndex("api_keys_user_provider_uq").on(t.userId, t.provider),
+    userProviderUq: uniqueIndex("orakel_api_keys_user_provider_uq").on(t.userId, t.provider),
   }),
 );
 
 export const executions = pgTable(
-  "executions",
+  "orakel_executions",
   {
     id: uuid("id").defaultRandom().primaryKey(),
     userId: uuid("user_id")
@@ -196,13 +196,13 @@ export const executions = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => ({
-    userIdx: index("executions_user_idx").on(t.userId),
-    predIdx: index("executions_prediction_idx").on(t.predictionId),
+    userIdx: index("orakel_executions_user_idx").on(t.userId),
+    predIdx: index("orakel_executions_prediction_idx").on(t.predictionId),
   }),
 );
 
 export const logs = pgTable(
-  "logs",
+  "orakel_logs",
   {
     id: uuid("id").defaultRandom().primaryKey(),
     userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
@@ -212,8 +212,8 @@ export const logs = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => ({
-    typeIdx: index("logs_type_idx").on(t.type),
-    userIdx: index("logs_user_idx").on(t.userId),
+    typeIdx: index("orakel_logs_type_idx").on(t.type),
+    userIdx: index("orakel_logs_user_idx").on(t.userId),
   }),
 );
 

@@ -1,11 +1,11 @@
 {
-  "id": "fef4993b-ca6e-44ee-a9ca-9f90633055da",
+  "id": "98295798-3dca-45f0-af25-62b9d78e8d2d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.api_keys": {
-      "name": "api_keys",
+    "public.orakel_api_keys": {
+      "name": "orakel_api_keys",
       "schema": "",
       "columns": {
         "id": {
@@ -23,7 +23,7 @@
         },
         "provider": {
           "name": "provider",
-          "type": "market_provider",
+          "type": "orakel_market_provider",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
@@ -55,8 +55,8 @@
         }
       },
       "indexes": {
-        "api_keys_user_provider_uq": {
-          "name": "api_keys_user_provider_uq",
+        "orakel_api_keys_user_provider_uq": {
+          "name": "orakel_api_keys_user_provider_uq",
           "columns": [
             {
               "expression": "user_id",
@@ -78,10 +78,10 @@
         }
       },
       "foreignKeys": {
-        "api_keys_user_id_users_id_fk": {
-          "name": "api_keys_user_id_users_id_fk",
-          "tableFrom": "api_keys",
-          "tableTo": "users",
+        "orakel_api_keys_user_id_orakel_users_id_fk": {
+          "name": "orakel_api_keys_user_id_orakel_users_id_fk",
+          "tableFrom": "orakel_api_keys",
+          "tableTo": "orakel_users",
           "columnsFrom": [
             "user_id"
           ],
@@ -98,8 +98,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.executions": {
-      "name": "executions",
+    "public.orakel_executions": {
+      "name": "orakel_executions",
       "schema": "",
       "columns": {
         "id": {
@@ -123,7 +123,7 @@
         },
         "provider": {
           "name": "provider",
-          "type": "market_provider",
+          "type": "orakel_market_provider",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
@@ -143,7 +143,7 @@
         },
         "status": {
           "name": "status",
-          "type": "execution_status",
+          "type": "orakel_execution_status",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
@@ -177,8 +177,8 @@
         }
       },
       "indexes": {
-        "executions_user_idx": {
-          "name": "executions_user_idx",
+        "orakel_executions_user_idx": {
+          "name": "orakel_executions_user_idx",
           "columns": [
             {
               "expression": "user_id",
@@ -192,8 +192,8 @@
           "method": "btree",
           "with": {}
         },
-        "executions_prediction_idx": {
-          "name": "executions_prediction_idx",
+        "orakel_executions_prediction_idx": {
+          "name": "orakel_executions_prediction_idx",
           "columns": [
             {
               "expression": "prediction_id",
@@ -209,10 +209,10 @@
         }
       },
       "foreignKeys": {
-        "executions_user_id_users_id_fk": {
-          "name": "executions_user_id_users_id_fk",
-          "tableFrom": "executions",
-          "tableTo": "users",
+        "orakel_executions_user_id_orakel_users_id_fk": {
+          "name": "orakel_executions_user_id_orakel_users_id_fk",
+          "tableFrom": "orakel_executions",
+          "tableTo": "orakel_users",
           "columnsFrom": [
             "user_id"
           ],
@@ -222,10 +222,10 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "executions_prediction_id_predictions_id_fk": {
-          "name": "executions_prediction_id_predictions_id_fk",
-          "tableFrom": "executions",
-          "tableTo": "predictions",
+        "orakel_executions_prediction_id_orakel_predictions_id_fk": {
+          "name": "orakel_executions_prediction_id_orakel_predictions_id_fk",
+          "tableFrom": "orakel_executions",
+          "tableTo": "orakel_predictions",
           "columnsFrom": [
             "prediction_id"
           ],
@@ -242,8 +242,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.logs": {
-      "name": "logs",
+    "public.orakel_logs": {
+      "name": "orakel_logs",
       "schema": "",
       "columns": {
         "id": {
@@ -287,8 +287,8 @@
         }
       },
       "indexes": {
-        "logs_type_idx": {
-          "name": "logs_type_idx",
+        "orakel_logs_type_idx": {
+          "name": "orakel_logs_type_idx",
           "columns": [
             {
               "expression": "type",
@@ -302,8 +302,8 @@
           "method": "btree",
           "with": {}
         },
-        "logs_user_idx": {
-          "name": "logs_user_idx",
+        "orakel_logs_user_idx": {
+          "name": "orakel_logs_user_idx",
           "columns": [
             {
               "expression": "user_id",
@@ -319,10 +319,10 @@
         }
       },
       "foreignKeys": {
-        "logs_user_id_users_id_fk": {
-          "name": "logs_user_id_users_id_fk",
-          "tableFrom": "logs",
-          "tableTo": "users",
+        "orakel_logs_user_id_orakel_users_id_fk": {
+          "name": "orakel_logs_user_id_orakel_users_id_fk",
+          "tableFrom": "orakel_logs",
+          "tableTo": "orakel_users",
           "columnsFrom": [
             "user_id"
           ],
@@ -339,8 +339,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.prediction_results": {
-      "name": "prediction_results",
+    "public.orakel_prediction_results": {
+      "name": "orakel_prediction_results",
       "schema": "",
       "columns": {
         "id": {
@@ -377,8 +377,8 @@
         }
       },
       "indexes": {
-        "prediction_results_prediction_uq": {
-          "name": "prediction_results_prediction_uq",
+        "orakel_prediction_results_prediction_uq": {
+          "name": "orakel_prediction_results_prediction_uq",
           "columns": [
             {
               "expression": "prediction_id",
@@ -394,10 +394,10 @@
         }
       },
       "foreignKeys": {
-        "prediction_results_prediction_id_predictions_id_fk": {
-          "name": "prediction_results_prediction_id_predictions_id_fk",
-          "tableFrom": "prediction_results",
-          "tableTo": "predictions",
+        "orakel_prediction_results_prediction_id_orakel_predictions_id_fk": {
+          "name": "orakel_prediction_results_prediction_id_orakel_predictions_id_fk",
+          "tableFrom": "orakel_prediction_results",
+          "tableTo": "orakel_predictions",
           "columnsFrom": [
             "prediction_id"
           ],
@@ -414,8 +414,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.prediction_signals": {
-      "name": "prediction_signals",
+    "public.orakel_prediction_signals": {
+      "name": "orakel_prediction_signals",
       "schema": "",
       "columns": {
         "id": {
@@ -433,7 +433,7 @@
         },
         "source_type": {
           "name": "source_type",
-          "type": "signal_source_type",
+          "type": "orakel_signal_source_type",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
@@ -459,8 +459,8 @@
         }
       },
       "indexes": {
-        "prediction_signals_prediction_idx": {
-          "name": "prediction_signals_prediction_idx",
+        "orakel_prediction_signals_prediction_idx": {
+          "name": "orakel_prediction_signals_prediction_idx",
           "columns": [
             {
               "expression": "prediction_id",
@@ -474,8 +474,8 @@
           "method": "btree",
           "with": {}
         },
-        "prediction_signals_type_idx": {
-          "name": "prediction_signals_type_idx",
+        "orakel_prediction_signals_type_idx": {
+          "name": "orakel_prediction_signals_type_idx",
           "columns": [
             {
               "expression": "source_type",
@@ -491,10 +491,10 @@
         }
       },
       "foreignKeys": {
-        "prediction_signals_prediction_id_predictions_id_fk": {
-          "name": "prediction_signals_prediction_id_predictions_id_fk",
-          "tableFrom": "prediction_signals",
-          "tableTo": "predictions",
+        "orakel_prediction_signals_prediction_id_orakel_predictions_id_fk": {
+          "name": "orakel_prediction_signals_prediction_id_orakel_predictions_id_fk",
+          "tableFrom": "orakel_prediction_signals",
+          "tableTo": "orakel_predictions",
           "columnsFrom": [
             "prediction_id"
           ],
@@ -511,8 +511,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.predictions": {
-      "name": "predictions",
+    "public.orakel_predictions": {
+      "name": "orakel_predictions",
       "schema": "",
       "columns": {
         "id": {
@@ -536,7 +536,7 @@
         },
         "provider": {
           "name": "provider",
-          "type": "market_provider",
+          "type": "orakel_market_provider",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
@@ -579,7 +579,7 @@
         },
         "status": {
           "name": "status",
-          "type": "prediction_status",
+          "type": "orakel_prediction_status",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
@@ -614,8 +614,8 @@
         }
       },
       "indexes": {
-        "predictions_provider_market_uq": {
-          "name": "predictions_provider_market_uq",
+        "orakel_predictions_provider_market_uq": {
+          "name": "orakel_predictions_provider_market_uq",
           "columns": [
             {
               "expression": "provider",
@@ -641,8 +641,8 @@
           "method": "btree",
           "with": {}
         },
-        "predictions_status_idx": {
-          "name": "predictions_status_idx",
+        "orakel_predictions_status_idx": {
+          "name": "orakel_predictions_status_idx",
           "columns": [
             {
               "expression": "status",
@@ -656,8 +656,8 @@
           "method": "btree",
           "with": {}
         },
-        "predictions_confidence_idx": {
-          "name": "predictions_confidence_idx",
+        "orakel_predictions_confidence_idx": {
+          "name": "orakel_predictions_confidence_idx",
           "columns": [
             {
               "expression": "confidence",
@@ -679,8 +679,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.profiles": {
-      "name": "profiles",
+    "public.orakel_profiles": {
+      "name": "orakel_profiles",
       "schema": "",
       "columns": {
         "user_id": {
@@ -697,7 +697,7 @@
         },
         "tier": {
           "name": "tier",
-          "type": "user_tier",
+          "type": "orakel_user_tier",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
@@ -732,8 +732,8 @@
         }
       },
       "indexes": {
-        "profiles_referral_code_uq": {
-          "name": "profiles_referral_code_uq",
+        "orakel_profiles_referral_code_uq": {
+          "name": "orakel_profiles_referral_code_uq",
           "columns": [
             {
               "expression": "referral_code",
@@ -749,10 +749,10 @@
         }
       },
       "foreignKeys": {
-        "profiles_user_id_users_id_fk": {
-          "name": "profiles_user_id_users_id_fk",
-          "tableFrom": "profiles",
-          "tableTo": "users",
+        "orakel_profiles_user_id_orakel_users_id_fk": {
+          "name": "orakel_profiles_user_id_orakel_users_id_fk",
+          "tableFrom": "orakel_profiles",
+          "tableTo": "orakel_users",
           "columnsFrom": [
             "user_id"
           ],
@@ -769,8 +769,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.referrals": {
-      "name": "referrals",
+    "public.orakel_referrals": {
+      "name": "orakel_referrals",
       "schema": "",
       "columns": {
         "id": {
@@ -807,8 +807,8 @@
         }
       },
       "indexes": {
-        "referrals_referrer_idx": {
-          "name": "referrals_referrer_idx",
+        "orakel_referrals_referrer_idx": {
+          "name": "orakel_referrals_referrer_idx",
           "columns": [
             {
               "expression": "referrer_user_id",
@@ -822,8 +822,8 @@
           "method": "btree",
           "with": {}
         },
-        "referrals_referred_uq": {
-          "name": "referrals_referred_uq",
+        "orakel_referrals_referred_uq": {
+          "name": "orakel_referrals_referred_uq",
           "columns": [
             {
               "expression": "referred_user_id",
@@ -837,8 +837,8 @@
           "method": "btree",
           "with": {}
         },
-        "referrals_code_idx": {
-          "name": "referrals_code_idx",
+        "orakel_referrals_code_idx": {
+          "name": "orakel_referrals_code_idx",
           "columns": [
             {
               "expression": "code",
@@ -854,10 +854,10 @@
         }
       },
       "foreignKeys": {
-        "referrals_referrer_user_id_users_id_fk": {
-          "name": "referrals_referrer_user_id_users_id_fk",
-          "tableFrom": "referrals",
-          "tableTo": "users",
+        "orakel_referrals_referrer_user_id_orakel_users_id_fk": {
+          "name": "orakel_referrals_referrer_user_id_orakel_users_id_fk",
+          "tableFrom": "orakel_referrals",
+          "tableTo": "orakel_users",
           "columnsFrom": [
             "referrer_user_id"
           ],
@@ -867,10 +867,10 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "referrals_referred_user_id_users_id_fk": {
-          "name": "referrals_referred_user_id_users_id_fk",
-          "tableFrom": "referrals",
-          "tableTo": "users",
+        "orakel_referrals_referred_user_id_orakel_users_id_fk": {
+          "name": "orakel_referrals_referred_user_id_orakel_users_id_fk",
+          "tableFrom": "orakel_referrals",
+          "tableTo": "orakel_users",
           "columnsFrom": [
             "referred_user_id"
           ],
@@ -887,8 +887,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.usage_limits": {
-      "name": "usage_limits",
+    "public.orakel_usage_limits": {
+      "name": "orakel_usage_limits",
       "schema": "",
       "columns": {
         "id": {
@@ -940,8 +940,8 @@
         }
       },
       "indexes": {
-        "usage_limits_user_month_uq": {
-          "name": "usage_limits_user_month_uq",
+        "orakel_usage_limits_user_month_uq": {
+          "name": "orakel_usage_limits_user_month_uq",
           "columns": [
             {
               "expression": "user_id",
@@ -963,10 +963,10 @@
         }
       },
       "foreignKeys": {
-        "usage_limits_user_id_users_id_fk": {
-          "name": "usage_limits_user_id_users_id_fk",
-          "tableFrom": "usage_limits",
-          "tableTo": "users",
+        "orakel_usage_limits_user_id_orakel_users_id_fk": {
+          "name": "orakel_usage_limits_user_id_orakel_users_id_fk",
+          "tableFrom": "orakel_usage_limits",
+          "tableTo": "orakel_users",
           "columnsFrom": [
             "user_id"
           ],
@@ -983,8 +983,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.users": {
-      "name": "users",
+    "public.orakel_users": {
+      "name": "orakel_users",
       "schema": "",
       "columns": {
         "id": {
@@ -1022,8 +1022,8 @@
         }
       },
       "indexes": {
-        "users_email_uq": {
-          "name": "users_email_uq",
+        "orakel_users_email_uq": {
+          "name": "orakel_users_email_uq",
           "columns": [
             {
               "expression": "email",
@@ -1047,8 +1047,8 @@
     }
   },
   "enums": {
-    "public.execution_status": {
-      "name": "execution_status",
+    "public.orakel_execution_status": {
+      "name": "orakel_execution_status",
       "schema": "public",
       "values": [
         "queued",
@@ -1057,24 +1057,24 @@
         "skipped"
       ]
     },
-    "public.market_provider": {
-      "name": "market_provider",
+    "public.orakel_market_provider": {
+      "name": "orakel_market_provider",
       "schema": "public",
       "values": [
         "polymarket",
         "kalshi"
       ]
     },
-    "public.prediction_status": {
-      "name": "prediction_status",
+    "public.orakel_prediction_status": {
+      "name": "orakel_prediction_status",
       "schema": "public",
       "values": [
         "open",
         "resolved"
       ]
     },
-    "public.signal_source_type": {
-      "name": "signal_source_type",
+    "public.orakel_signal_source_type": {
+      "name": "orakel_signal_source_type",
       "schema": "public",
       "values": [
         "polymarket",
@@ -1084,8 +1084,8 @@
         "rss"
       ]
     },
-    "public.user_tier": {
-      "name": "user_tier",
+    "public.orakel_user_tier": {
+      "name": "orakel_user_tier",
       "schema": "public",
       "values": [
         "free",
