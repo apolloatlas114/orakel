@@ -1,9 +1,10 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { Mail, Lock, User, ArrowRight, Eye, EyeOff, Github, Chrome, Check } from "lucide-react"
+import { Mail, Lock, User, ArrowRight, Eye, EyeOff, Github, Chrome, Check, AlertCircle, CheckCircle } from "lucide-react"
 import { Navbar } from "@/components/layout/Navbar"
 import { Footer } from "@/components/layout/Footer"
 import { Button } from "@/components/ui/button"
@@ -11,6 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/contexts/AuthContext"
 
 const passwordRequirements = [
   { id: "length", label: "At least 8 characters", test: (p: string) => p.length >= 8 },
@@ -20,8 +22,13 @@ const passwordRequirements = [
 ]
 
 export default function RegisterPage() {
+  const router = useRouter()
+  const { signUp, signInWithGoogle, signInWithGithub } = useAuth()
+
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -31,15 +38,79 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-    setIsLoading(false)
-    // Handle registration logic with Supabase
+    setError(null)
+
+    const { error: signUpError } = await signUp(
+      formData.email,
+      formData.password,
+      formData.username
+    )
+
+    if (signUpError) {
+      setError(signUpError.message)
+      setIsLoading(false)
+    } else {
+      setSuccess(true)
+      setIsLoading(false)
+    }
+  }
+
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true)
+    setError(null)
+    const { error: googleError } = await signInWithGoogle()
+    if (googleError) {
+      setError(googleError.message)
+      setIsLoading(false)
+    }
+  }
+
+  const handleGithubSignIn = async () => {
+    setIsLoading(true)
+    setError(null)
+    const { error: githubError } = await signInWithGithub()
+    if (githubError) {
+      setError(githubError.message)
+      setIsLoading(false)
+    }
   }
 
   const passwordStrength = passwordRequirements.filter((req) =>
     req.test(formData.password)
   ).length
+
+  if (success) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <main className="flex-1 flex items-center justify-center px-4 py-32">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+            className="w-full max-w-md"
+          >
+            <Card className="glass-card border-success/30">
+              <CardContent className="p-8 text-center">
+                <div className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center mx-auto mb-6">
+                  <CheckCircle className="w-8 h-8 text-success" />
+                </div>
+                <h2 className="text-2xl font-heading font-bold mb-2">Check Your Email</h2>
+                <p className="text-muted-foreground mb-6">
+                  We&apos;ve sent a confirmation link to <strong>{formData.email}</strong>.
+                  Click the link to verify your account and start predicting!
+                </p>
+                <Button onClick={() => router.push("/auth/login")} className="w-full">
+                  Back to Sign In
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </main>
+        <Footer />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -66,13 +137,31 @@ export default function RegisterPage() {
             </CardHeader>
 
             <CardContent className="space-y-6">
+              {/* Error Message */}
+              {error && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  {error}
+                </div>
+              )}
+
               {/* Social Login Buttons */}
               <div className="grid grid-cols-2 gap-3">
-                <Button variant="outline" className="gap-2" disabled={isLoading}>
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  disabled={isLoading}
+                  onClick={handleGoogleSignIn}
+                >
                   <Chrome className="w-4 h-4" />
                   Google
                 </Button>
-                <Button variant="outline" className="gap-2" disabled={isLoading}>
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  disabled={isLoading}
+                  onClick={handleGithubSignIn}
+                >
                   <Github className="w-4 h-4" />
                   GitHub
                 </Button>
@@ -99,6 +188,10 @@ export default function RegisterPage() {
                       className="pl-10"
                       required
                       disabled={isLoading}
+                      minLength={3}
+                      maxLength={20}
+                      pattern="[a-zA-Z0-9_]+"
+                      title="Username can only contain letters, numbers, and underscores"
                     />
                   </div>
                 </div>
@@ -190,7 +283,7 @@ export default function RegisterPage() {
                   type="submit"
                   className="w-full gap-2 group"
                   size="lg"
-                  disabled={isLoading || passwordStrength < 4}
+                  disabled={isLoading || passwordStrength < 4 || !formData.username}
                 >
                   {isLoading ? (
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

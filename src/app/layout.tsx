@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import "./globals.css"
+import { Providers } from "./providers"
 
 export const metadata: Metadata = {
   title: "Global Oracle Platform | Predict the Future",
@@ -21,12 +22,14 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className="antialiased min-h-screen">
-        <div className="relative min-h-screen grid-pattern">
-          <div className="noise-overlay" />
-          <div className="relative z-10">
-            {children}
+        <Providers>
+          <div className="relative min-h-screen grid-pattern">
+            <div className="noise-overlay" />
+            <div className="relative z-10">
+              {children}
+            </div>
           </div>
-        </div>
+        </Providers>
       </body>
     </html>
   )

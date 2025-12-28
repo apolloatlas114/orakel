@@ -1,19 +1,25 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { Mail, Lock, ArrowRight, Eye, EyeOff, Github, Chrome } from "lucide-react"
+import { Mail, Lock, ArrowRight, Eye, EyeOff, Github, Chrome, AlertCircle } from "lucide-react"
 import { Navbar } from "@/components/layout/Navbar"
 import { Footer } from "@/components/layout/Footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { useAuth } from "@/contexts/AuthContext"
 
 export default function LoginPage() {
+  const router = useRouter()
+  const { signIn, signInWithGoogle, signInWithGithub } = useAuth()
+
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -22,10 +28,36 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-    setIsLoading(false)
-    // Handle login logic with Supabase
+    setError(null)
+
+    const { error: signInError } = await signIn(formData.email, formData.password)
+
+    if (signInError) {
+      setError(signInError.message)
+      setIsLoading(false)
+    } else {
+      router.push("/")
+    }
+  }
+
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true)
+    setError(null)
+    const { error: googleError } = await signInWithGoogle()
+    if (googleError) {
+      setError(googleError.message)
+      setIsLoading(false)
+    }
+  }
+
+  const handleGithubSignIn = async () => {
+    setIsLoading(true)
+    setError(null)
+    const { error: githubError } = await signInWithGithub()
+    if (githubError) {
+      setError(githubError.message)
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -53,13 +85,31 @@ export default function LoginPage() {
             </CardHeader>
 
             <CardContent className="space-y-6">
+              {/* Error Message */}
+              {error && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  {error}
+                </div>
+              )}
+
               {/* Social Login Buttons */}
               <div className="grid grid-cols-2 gap-3">
-                <Button variant="outline" className="gap-2" disabled={isLoading}>
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  disabled={isLoading}
+                  onClick={handleGoogleSignIn}
+                >
                   <Chrome className="w-4 h-4" />
                   Google
                 </Button>
-                <Button variant="outline" className="gap-2" disabled={isLoading}>
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  disabled={isLoading}
+                  onClick={handleGithubSignIn}
+                >
                   <Github className="w-4 h-4" />
                   GitHub
                 </Button>
