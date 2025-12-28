@@ -1,24 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Orakel — Prediction & Content Intelligence
+
+Premium dashboard + bot UX (ZEUS‑X inspired) for prediction markets. The UI is live immediately; DB-backed auth requires Postgres.
 
 ## Getting Started
 
-First, run the development server:
+### Local dev (UI-only, no DB required)
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open:
+- `http://localhost:3000` (landing)
+- `http://localhost:3000/demo` (ZEUS‑style demo dashboard)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Enable registration/login (requires Postgres + env vars)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1) Create a Postgres DB (recommended: Vercel Postgres) and set:
+- `DATABASE_URL`
+- `AUTH_SECRET` (a long random string)
+
+You can copy `env.example` into your local `.env.local` (do not commit secrets).
+
+2) Run the DB migration once (or let Vercel run it on deploy via the build step):
+
+```bash
+node scripts/migrate.mjs
+```
+
+### Deploy on Vercel
+
+- Add **Vercel Postgres** to the project (it will inject `DATABASE_URL`)
+- Set `AUTH_SECRET` in Vercel → Project → Settings → Environment Variables
+- Deploy (build runs `node scripts/migrate.mjs && next build`)
 
 ## Learn More
 

@@ -1,26 +1,46 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #07080a;
+  --panel: #0d0f14;
+  --panel-2: #0a0c10;
+  --border: rgba(255, 255, 255, 0.08);
+  --text: #e8eaf0;
+  --muted: rgba(232, 234, 240, 0.65);
+  --accent: #ff6a00; /* neon orange */
+  --accent-2: #ff9b3e;
+  --glow: rgba(255, 106, 0, 0.35);
+  --glow-2: rgba(255, 106, 0, 0.18);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
   --font-sans: var(--font-inter);
-
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: radial-gradient(1200px 900px at 20% 10%, rgba(255, 106, 0, 0.10), transparent 60%),
+    radial-gradient(900px 800px at 85% 20%, rgba(255, 106, 0, 0.07), transparent 55%),
+    radial-gradient(700px 700px at 60% 90%, rgba(255, 255, 255, 0.04), transparent 60%),
+    var(--bg);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
+    "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+.orakel-grid {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 44px 44px;
+  background-position: center;
+  mask-image: radial-gradient(circle at 50% 20%, black 10%, transparent 70%);
+}
+
+.orakel-glow {
+  box-shadow: 0 0 0 1px var(--border), 0 0 30px var(--glow-2);
+}
+
+.orakel-glow:hover {
+  box-shadow: 0 0 0 1px rgba(255, 106, 0, 0.25), 0 0 45px var(--glow);
 }

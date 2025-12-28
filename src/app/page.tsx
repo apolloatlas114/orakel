@@ -1,63 +1,119 @@
-import Image from "next/image";
+import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="relative min-h-screen">
+      <div className="pointer-events-none absolute inset-0 orakel-grid opacity-70" />
+
+      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
+        <div>
+          <div className="text-xs tracking-[0.22em] text-[var(--muted)]">
+            ORAKEL
+          </div>
+          <div className="text-lg font-semibold tracking-tight">
+            <span className="text-white">ORAKEL</span>{" "}
+            <span className="text-[var(--accent)]">CORE</span>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+        <div className="flex items-center gap-2">
+          <Link
+            href="/demo"
+            className="h-10 rounded-xl border border-[var(--border)] bg-[rgba(255,255,255,0.03)] px-4 text-sm font-semibold leading-10 text-white/90 hover:bg-white/[0.05]"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            View demo
+          </Link>
+          <Link
+            href="/auth/register"
+            className="h-10 rounded-xl bg-[var(--accent)] px-4 text-sm font-semibold leading-10 text-black hover:brightness-110"
           >
-            Documentation
-          </a>
+            Create free account
+          </Link>
+        </div>
+      </header>
+
+      <main className="mx-auto grid max-w-6xl gap-10 px-6 pb-16 pt-10 lg:grid-cols-12">
+        <div className="lg:col-span-7">
+          <div className="text-xs tracking-[0.22em] text-[var(--muted)]">
+            PREDICTION & CONTENT INTELLIGENCE
+          </div>
+          <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
+            A premium dashboard for{" "}
+            <span className="text-[var(--accent)]">best-odds</span> prediction
+            opportunities.
+          </h1>
+          <p className="mt-5 max-w-xl text-sm leading-7 text-[var(--muted)]">
+            Orakel aggregates Polymarket + Kalshi markets and enriches them with
+            signals from X, Reddit, and news RSS. Orakel Core explains{" "}
+            <span className="text-white">why</span> an event is likely and ranks
+            opportunities by edge and confidence.
+          </p>
+
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <Link
+              href="/demo"
+              className="orakel-glow h-11 rounded-xl border border-[var(--border)] bg-[var(--panel)] px-5 text-sm font-semibold leading-[44px] text-white/90 hover:text-white"
+            >
+              Explore the ZEUS‑X demo dashboard
+            </Link>
+            <Link
+              href="/auth/register"
+              className="h-11 rounded-xl bg-[var(--accent)] px-5 text-sm font-semibold leading-[44px] text-black hover:brightness-110"
+            >
+              Start free (10 executions/month)
+            </Link>
+          </div>
+
+          <div className="mt-10 grid gap-3 sm:grid-cols-3">
+            {[
+              { k: "Full visibility", v: "All predictions and reasoning" },
+              { k: "Edge-ranked", v: "Market odds vs Oracle probability" },
+              { k: "Execution", v: "API-only on your account" },
+            ].map((x) => (
+              <div
+                key={x.k}
+                className="orakel-glow rounded-2xl border border-[var(--border)] bg-[var(--panel)] p-4"
+              >
+                <div className="text-xs tracking-[0.18em] text-[var(--muted)]">
+                  {x.k.toUpperCase()}
+                </div>
+                <div className="mt-2 text-sm font-medium text-white/90">
+                  {x.v}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="lg:col-span-5">
+          <div className="orakel-glow rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-6">
+            <div className="text-xs tracking-[0.22em] text-[var(--muted)]">
+              QUICK START
+            </div>
+            <div className="mt-2 text-xl font-semibold tracking-tight">
+              Go live in minutes
+            </div>
+            <ol className="mt-4 grid gap-3 text-sm text-[var(--muted)]">
+              <li>
+                <span className="text-white/90">1.</span> Create a free account
+              </li>
+              <li>
+                <span className="text-white/90">2.</span> Connect Polymarket /
+                Kalshi API keys (encrypted)
+              </li>
+              <li>
+                <span className="text-white/90">3.</span> Get ranked bets +
+                explanations; execute within limits
+              </li>
+            </ol>
+            <div className="mt-6 rounded-2xl border border-[rgba(255,106,0,0.25)] bg-[rgba(255,106,0,0.08)] p-4 text-sm text-white/80">
+              <div className="font-semibold text-[var(--accent-2)]">
+                No custody. No funds handled.
+              </div>
+              <div className="mt-1">
+                Executions happen only via your API keys on your own accounts.
+              </div>
+            </div>
+          </div>
         </div>
       </main>
     </div>
