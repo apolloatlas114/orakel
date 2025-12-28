@@ -8,7 +8,23 @@ if (!url) {
   process.exit(0);
 }
 
-const client = postgres(url, { max: 1, prepare: false });
+function shouldUseSsl(url) {
+  try {
+    const u = new URL(url);
+    const host = (u.hostname || "").toLowerCase();
+    if (host.endsWith(".supabase.co")) return true;
+    if (u.searchParams.get("sslmode") === "require") return true;
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+const client = postgres(url, {
+  max: 1,
+  prepare: false,
+  ssl: shouldUseSsl(url) ? { rejectUnauthorized: true } : undefined,
+});
 const db = drizzle(client);
 
 await migrate(db, { migrationsFolder: "drizzle" });
