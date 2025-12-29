@@ -87,7 +87,7 @@ export async function registerAction(formData: FormData) {
     redirect(`/auth/register?error=${encodeURIComponent(errorMessage(e))}`);
   }
 
-  redirect("/demo");
+  redirect("/dashboard");
 }
 
 export async function loginAction(formData: FormData) {
