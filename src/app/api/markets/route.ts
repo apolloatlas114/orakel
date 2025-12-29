@@ -7,7 +7,8 @@ export const revalidate = 60; // Cache for 60 seconds
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const limit = Math.min(parseInt(searchParams.get("limit") || "100"), 100);
+  // Reduce initial limit for faster loading - can load more on demand
+  const limit = Math.min(parseInt(searchParams.get("limit") || "30"), 50);
   
   try {
     console.log("[Markets API] Fetching from Polymarket...");
@@ -49,46 +50,54 @@ export async function GET(request: Request) {
       return true;
     });
     
-    // Enrich markets with edge data (parallel processing)
-    const enrichedMarketsPromises = validMarkets.map(async (market) => {
-      try {
-        const outcomes = parseOutcomePrices(market);
-        const yesOutcome = outcomes.find(o => o.outcome.toLowerCase() === "yes" || o.outcome.toLowerCase().includes("yes"));
-        const yesPrice = yesOutcome ? yesOutcome.probability / 100 : 0.5;
-        
-        const volume = parseFloat(market.volume) || 0;
-        const liquidity = parseFloat(market.liquidity) || 0;
-        
-        // Generate edge with real API signals
-        const edge = await generateMarketEdge(
-          market.id,
-          market.question,
-          yesPrice,
-          volume,
-          liquidity
-        );
-        
-        return {
-          id: market.id,
-          question: market.question,
-          slug: market.slug || market.id,
-          image: market.image || "",
-          endDate: market.endDate || "",
-          outcomes,
-          volume,
-          liquidity,
-          active: market.active !== false, // Default to true if not specified
-          closed: market.closed === true,
-          edge,
-        };
-      } catch (e) {
-        console.error(`[Markets API] Error enriching market ${market.id}:`, e);
-        return null;
-      }
-    });
+    // Enrich markets with edge data (batched for performance)
+    // Process in batches of 10 to avoid overwhelming APIs
+    const batchSize = 10;
+    const enrichedMarkets: any[] = [];
     
-    const enrichedMarketsResults = await Promise.all(enrichedMarketsPromises);
-    const enrichedMarkets = enrichedMarketsResults.filter((m): m is NonNullable<typeof m> => m !== null);
+    for (let i = 0; i < validMarkets.length; i += batchSize) {
+      const batch = validMarkets.slice(i, i + batchSize);
+      
+      const batchPromises = batch.map(async (market) => {
+        try {
+          const outcomes = parseOutcomePrices(market);
+          const yesOutcome = outcomes.find(o => o.outcome.toLowerCase() === "yes" || o.outcome.toLowerCase().includes("yes"));
+          const yesPrice = yesOutcome ? yesOutcome.probability / 100 : 0.5;
+          
+          const volume = parseFloat(market.volume) || 0;
+          const liquidity = parseFloat(market.liquidity) || 0;
+          
+          // Generate edge with real API signals
+          const edge = await generateMarketEdge(
+            market.id,
+            market.question,
+            yesPrice,
+            volume,
+            liquidity
+          );
+          
+          return {
+            id: market.id,
+            question: market.question,
+            slug: market.slug || market.id,
+            image: market.image || "",
+            endDate: market.endDate || "",
+            outcomes,
+            volume,
+            liquidity,
+            active: market.active !== false,
+            closed: market.closed === true,
+            edge,
+          };
+        } catch (e) {
+          console.error(`[Markets API] Error enriching market ${market.id}:`, e);
+          return null;
+        }
+      });
+      
+      const batchResults = await Promise.all(batchPromises);
+      enrichedMarkets.push(...batchResults.filter((m): m is NonNullable<typeof m> => m !== null));
+    }
     
     console.log(`[Markets API] Successfully enriched ${enrichedMarkets.length} markets`);
     

@@ -62,7 +62,7 @@ export default function MarketsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/markets?limit=100", {
+      const res = await fetch("/api/markets?limit=30", {
         cache: "no-store",
       });
       
@@ -181,36 +181,49 @@ export default function MarketsPage() {
             </h1>
           </div>
 
-          {/* Edge Logic Info */}
-          <div className="flex items-center gap-2 text-xs text-[var(--muted)]">
-            <span>EDGE FOUND:</span>
-            <span>Signal diverges from market price</span>
-            <span>•</span>
-            <span>NEUTRAL:</span>
-            <span>Signal and market agree</span>
-          </div>
-          
           {/* Filters */}
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Edge Filter */}
-            <div className="flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--panel-2)] p-1">
-              {[
-                { value: "all", label: "All" },
-                { value: "edge", label: `Edge Found (${edgeStats.edgeFound})` },
-                { value: "no_edge", label: "No Edge" },
-              ].map((f) => (
-                <button
-                  key={f.value}
-                  onClick={() => setEdgeFilter(f.value as typeof edgeFilter)}
-                  className={`rounded px-2 py-1 text-xs font-medium transition-all ${
-                    edgeFilter === f.value
-                      ? "bg-[var(--accent)] text-black"
-                      : "text-[var(--muted)] hover:text-white"
-                  }`}
-                >
-                  {f.label}
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Edge Filter with Info */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--panel-2)] p-1">
+                {[
+                  { value: "all", label: "All" },
+                  { value: "edge", label: `Edge Found (${edgeStats.edgeFound})` },
+                  { value: "no_edge", label: "No Edge" },
+                ].map((f) => (
+                  <button
+                    key={f.value}
+                    onClick={() => setEdgeFilter(f.value as typeof edgeFilter)}
+                    className={`rounded px-2 py-1 text-xs font-medium transition-all ${
+                      edgeFilter === f.value
+                        ? "bg-[var(--accent)] text-black"
+                        : "text-[var(--muted)] hover:text-white"
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+              
+              {/* Edge Logic Info Tooltip */}
+              <div className="group relative">
+                <button className="flex items-center justify-center w-5 h-5 rounded-full border border-[var(--border)] bg-[var(--panel-2)] text-[var(--muted)] hover:text-white transition-colors text-xs">
+                  ?
                 </button>
-              ))}
+                <div className="absolute right-0 top-full mt-2 w-64 p-3 rounded-lg border border-[var(--border)] bg-[var(--panel-2)] shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                  <div className="text-[10px] tracking-[0.2em] text-[var(--muted)] mb-2">EDGE LOGIC</div>
+                  <div className="space-y-2 text-xs">
+                    <div>
+                      <span className="font-semibold text-emerald-400">EDGE FOUND:</span>
+                      <span className="text-[var(--muted)] ml-1">Signal diverges from market price</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-[var(--muted)]">NEUTRAL:</span>
+                      <span className="text-[var(--muted)] ml-1">Signal and market agree</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
             
             {/* Category Filter */}
@@ -312,7 +325,8 @@ export default function MarketsPage() {
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
               <div className="inline-block h-8 w-8 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
-              <p className="mt-4 text-[var(--muted)]">Loading markets...</p>
+              <p className="mt-4 text-sm text-[var(--muted)]">Analyzing markets with Edge Engine...</p>
+              <p className="mt-1 text-xs text-[var(--muted)]">This may take a few seconds</p>
             </div>
           </div>
         )}

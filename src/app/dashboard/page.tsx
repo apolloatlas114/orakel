@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { GlowCard } from "@/components/ui/glow";
 import { StateCheckModal } from "@/components/dashboard/state-check-modal";
+import { ReferralModal } from "@/components/dashboard/referral-modal";
 
 export type EdgeStatus = "EDGE_FOUND" | "NO_EDGE" | "EDGE_NEGATIVE";
 export type Mode = "markets" | "sports" | "politics";
@@ -46,6 +47,7 @@ const edgeConfig = {
 export default function DashboardPage() {
   const [mode, setMode] = useState<Mode>("markets");
   const [showStateCheck, setShowStateCheck] = useState(true);
+  const [showReferralModal, setShowReferralModal] = useState(false);
   const [userState, setUserState] = useState<UserState | null>(null);
   const [edgeStatus, setEdgeStatus] = useState<EdgeStatus>("NO_EDGE");
 
@@ -78,6 +80,9 @@ export default function DashboardPage() {
       {/* State Check Modal */}
       {showStateCheck && <StateCheckModal onSubmit={handleStateSubmit} />}
 
+      {/* Referral Modal */}
+      <ReferralModal isOpen={showReferralModal} onClose={() => setShowReferralModal(false)} />
+
       <div className={showStateCheck ? "blur-sm pointer-events-none" : ""}>
         {/* Header */}
         <header className="sticky top-0 z-30 border-b border-[var(--border)] bg-[var(--bg)]/80 backdrop-blur-xl">
@@ -94,7 +99,7 @@ export default function DashboardPage() {
 
             {/* Center: Referral Button */}
             <button
-              onClick={() => {/* TODO: Open referral modal */}}
+              onClick={() => setShowReferralModal(true)}
               className="flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--panel-2)] px-4 py-2 text-sm font-medium text-[var(--muted)] hover:text-white transition-colors"
             >
               <span>🔗</span>
