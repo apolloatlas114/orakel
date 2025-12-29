@@ -19,6 +19,16 @@ export async function GET() {
     return NextResponse.json({ ok: true, result });
   } catch (e) {
     const err = e instanceof Error ? e : new Error("DB error");
+    const url = process.env.DATABASE_URL ?? "";
+    let host: string | undefined;
+    let port: number | undefined;
+    try {
+      const u = new URL(url);
+      host = u.hostname;
+      port = u.port ? Number(u.port) : undefined;
+    } catch {
+      // ignore
+    }
     const cause = (err as unknown as { cause?: unknown }).cause;
     const causeObj = (() => {
       if (!cause || typeof cause !== "object") return undefined;
@@ -46,6 +56,8 @@ export async function GET() {
       {
         ok: false,
         error: err.message,
+        host,
+        port,
         cause: causeObj,
       },
       { status: 500 },

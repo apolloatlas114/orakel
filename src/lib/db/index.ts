@@ -14,7 +14,7 @@ function shouldUseSsl(url: string) {
     const u = new URL(url);
     const host = u.hostname.toLowerCase();
     // Supabase Postgres typically requires SSL.
-    if (host.endsWith(".supabase.co")) return true;
+    if (host.endsWith(".supabase.co") || host.endsWith(".supabase.com")) return true;
     // Some providers include sslmode=require in the connection string.
     if (u.searchParams.get("sslmode") === "require") return true;
     return false;
@@ -28,7 +28,7 @@ function shouldForceIpv4(url: string) {
     const u = new URL(url);
     const host = u.hostname.toLowerCase();
     // Vercel build/runtime may not have IPv6 egress; force IPv4 for Supabase hosts.
-    return host.endsWith(".supabase.co");
+    return host.endsWith(".supabase.co") || host.endsWith(".supabase.com");
   } catch {
     return false;
   }
