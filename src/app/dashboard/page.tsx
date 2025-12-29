@@ -6,7 +6,6 @@ import { StateCheckModal } from "@/components/dashboard/state-check-modal";
 import { ReferralModal } from "@/components/dashboard/referral-modal";
 
 export type EdgeStatus = "EDGE_FOUND" | "NO_EDGE" | "EDGE_NEGATIVE";
-export type Mode = "markets" | "sports" | "politics";
 export type EnergyLevel = "low" | "normal" | "high";
 export type MentalClarity = "distracted" | "focused";
 export type EmotionalPressure = "calm" | "impulsive";
@@ -45,7 +44,6 @@ const edgeConfig = {
 };
 
 export default function DashboardPage() {
-  const [mode, setMode] = useState<Mode>("markets");
   const [showStateCheck, setShowStateCheck] = useState(true);
   const [showReferralModal, setShowReferralModal] = useState(false);
   const [userState, setUserState] = useState<UserState | null>(null);

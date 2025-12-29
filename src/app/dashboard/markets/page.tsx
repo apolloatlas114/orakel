@@ -348,7 +348,7 @@ export default function MarketsPage() {
         {/* Markets Grid - Compact 3 columns */}
         {!loading && !error && (
           <div className="grid gap-3 lg:grid-cols-3 md:grid-cols-2">
-            {filteredMarkets.map((market, index) => {
+            {filteredMarkets.map((market) => {
               // Free account: blur markets after first 3 edge found
               const isBlurred = userTier === "free" && 
                 market.edge.edgeType === "positive" && 

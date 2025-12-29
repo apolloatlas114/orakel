@@ -53,7 +53,19 @@ export async function GET(request: Request) {
     // Enrich markets with edge data (batched for performance)
     // Process in batches of 10 to avoid overwhelming APIs
     const batchSize = 10;
-    const enrichedMarkets: any[] = [];
+    const enrichedMarkets: Array<{
+      id: string;
+      question: string;
+      slug: string;
+      image: string;
+      endDate: string;
+      outcomes: { outcome: string; probability: number }[];
+      volume: number;
+      liquidity: number;
+      active: boolean;
+      closed: boolean;
+      edge: Awaited<ReturnType<typeof generateMarketEdge>>;
+    }> = [];
     
     for (let i = 0; i < validMarkets.length; i += batchSize) {
       const batch = validMarkets.slice(i, i + batchSize);
