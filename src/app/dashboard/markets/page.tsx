@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { GlowCard } from "@/components/ui/glow";
 import type { MarketEdgeData } from "@/lib/signals/types";
@@ -18,7 +18,10 @@ interface EnrichedMarket {
   active: boolean;
   closed: boolean;
   edge: MarketEdgeData;
+  category?: MarketCategory;
 }
+
+type MarketCategory = "crypto_stock" | "politics" | "global" | "sports" | "other";
 
 interface MarketsResponse {
   success: boolean;
@@ -26,11 +29,17 @@ interface MarketsResponse {
   markets: EnrichedMarket[];
 }
 
+interface SegmentStats {
+  events: number;
+  volume: number;
+  edgeFound: number;
+}
+
 export default function MarketsPage() {
   const [markets, setMarkets] = useState<EnrichedMarket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"all" | "edge" | "high_volume">("all");
+  const [selectedCategory, setSelectedCategory] = useState<MarketCategory | "all">("all");
 
   useEffect(() => {
     fetchMarkets();
@@ -40,9 +49,8 @@ export default function MarketsPage() {
     setLoading(true);
     setError(null);
     try {
-      console.log("[Markets Page] Fetching markets...");
-      const res = await fetch("/api/markets?limit=30", {
-        cache: "no-store", // Force fresh data
+      const res = await fetch("/api/markets?limit=50", {
+        cache: "no-store",
       });
       
       if (!res.ok) {
@@ -51,7 +59,6 @@ export default function MarketsPage() {
       }
       
       const data: MarketsResponse = await res.json();
-      console.log("[Markets Page] Response:", { success: data.success, count: data.count });
       
       if (!data.success) {
         const errorData = data as { error?: string };
@@ -59,12 +66,18 @@ export default function MarketsPage() {
       }
       
       if (!data.markets || data.markets.length === 0) {
-        setError("No markets found. The Polymarket API might be unavailable or returning empty results.");
+        setError("No markets found.");
         setMarkets([]);
         return;
       }
       
-      setMarkets(data.markets);
+      // Categorize markets
+      const categorizedMarkets = data.markets.map(m => ({
+        ...m,
+        category: categorizeMarket(m.question),
+      }));
+      
+      setMarkets(categorizedMarkets);
     } catch (e) {
       console.error("[Markets Page] Error:", e);
       setError(e instanceof Error ? e.message : "Failed to load markets");
@@ -74,13 +87,42 @@ export default function MarketsPage() {
     }
   }
 
-  const filteredMarkets = markets.filter((m) => {
-    if (filter === "edge") return m.edge.edgeType === "positive";
-    if (filter === "high_volume") return m.volume > 100000;
-    return true;
-  });
+  // Calculate segment stats
+  const segmentStats = useMemo(() => {
+    const stats: Record<MarketCategory, SegmentStats> = {
+      crypto_stock: { events: 0, volume: 0, edgeFound: 0 },
+      politics: { events: 0, volume: 0, edgeFound: 0 },
+      global: { events: 0, volume: 0, edgeFound: 0 },
+      sports: { events: 0, volume: 0, edgeFound: 0 },
+      other: { events: 0, volume: 0, edgeFound: 0 },
+    };
 
-  const positiveEdgeCount = markets.filter(m => m.edge.edgeType === "positive").length;
+    markets.forEach(m => {
+      const cat = m.category || "other";
+      stats[cat].events++;
+      stats[cat].volume += m.volume;
+      if (m.edge.edgeType === "positive") {
+        stats[cat].edgeFound++;
+      }
+    });
+
+    return stats;
+  }, [markets]);
+
+  // Filter markets by category
+  const filteredMarkets = useMemo(() => {
+    if (selectedCategory === "all") return markets;
+    return markets.filter(m => m.category === selectedCategory);
+  }, [markets, selectedCategory]);
+
+  const categories: { value: MarketCategory | "all"; label: string }[] = [
+    { value: "all", label: "All Markets" },
+    { value: "crypto_stock", label: "Crypto & Stock" },
+    { value: "politics", label: "Politics" },
+    { value: "global", label: "Global" },
+    { value: "sports", label: "Sports" },
+    { value: "other", label: "Other" },
+  ];
 
   return (
     <div className="min-h-screen">
@@ -89,30 +131,26 @@ export default function MarketsPage() {
         <div className="flex items-center justify-between px-8 py-4">
           <div>
             <div className="text-[10px] tracking-[0.25em] text-[var(--muted)]">
-              POLYMARKET INTEGRATION
+              LIVE MARKETS
             </div>
             <h1 className="text-xl font-semibold tracking-tight">
-              Live Markets
+              Markets
             </h1>
           </div>
 
-          {/* Filter */}
-          <div className="flex items-center gap-2">
-            {[
-              { value: "all", label: "All Markets" },
-              { value: "edge", label: `Edge Found (${positiveEdgeCount})` },
-              { value: "high_volume", label: "High Volume" },
-            ].map((f) => (
+          {/* Category Filter */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {categories.map((cat) => (
               <button
-                key={f.value}
-                onClick={() => setFilter(f.value as typeof filter)}
-                className={`rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
-                  filter === f.value
+                key={cat.value}
+                onClick={() => setSelectedCategory(cat.value)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+                  selectedCategory === cat.value
                     ? "bg-[var(--accent)] text-black"
                     : "text-[var(--muted)] hover:text-white border border-[var(--border)] bg-[var(--panel-2)]"
                 }`}
               >
-                {f.label}
+                {cat.label}
               </button>
             ))}
           </div>
@@ -131,29 +169,52 @@ export default function MarketsPage() {
 
       {/* Content */}
       <div className="p-8">
-        {/* Stats */}
-        <div className="grid grid-cols-4 gap-4 mb-8">
-          {[
-            { label: "Total Markets", value: markets.length },
-            { label: "Edge Opportunities", value: positiveEdgeCount, highlight: true },
-            { label: "Total Volume", value: formatCurrency(markets.reduce((sum, m) => sum + m.volume, 0)) },
-            { label: "Total Liquidity", value: formatCurrency(markets.reduce((sum, m) => sum + m.liquidity, 0)) },
-          ].map((stat) => (
-            <GlowCard key={stat.label} className="p-4">
-              <div className="text-xs text-[var(--muted)]">{stat.label}</div>
-              <div className={`mt-1 text-2xl font-bold ${stat.highlight ? "text-[var(--accent)]" : ""}`}>
-                {stat.value}
-              </div>
-            </GlowCard>
-          ))}
-        </div>
+        {/* Segment Stats */}
+        {selectedCategory === "all" && (
+          <div className="grid grid-cols-5 gap-4 mb-8">
+            {[
+              { key: "crypto_stock" as MarketCategory, label: "Crypto & Stock" },
+              { key: "politics" as MarketCategory, label: "Politics" },
+              { key: "global" as MarketCategory, label: "Global" },
+              { key: "sports" as MarketCategory, label: "Sports" },
+              { key: "other" as MarketCategory, label: "Other" },
+            ].map((segment) => {
+              const stats = segmentStats[segment.key];
+              return (
+                <button
+                  key={segment.key}
+                  onClick={() => setSelectedCategory(segment.key)}
+                  className="text-left"
+                >
+                  <GlowCard className="p-4 hover:border-[var(--accent)]/30 transition-colors">
+                    <div className="text-xs text-[var(--muted)] mb-2">{segment.label}</div>
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-[var(--muted)]">Events</span>
+                        <span className="text-sm font-semibold">{stats.events}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-[var(--muted)]">Volume</span>
+                        <span className="text-sm font-semibold">{formatCurrency(stats.volume)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-[var(--muted)]">Edge Found</span>
+                        <span className="text-sm font-semibold text-[var(--accent)]">{stats.edgeFound}</span>
+                      </div>
+                    </div>
+                  </GlowCard>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* Loading */}
         {loading && (
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
               <div className="inline-block h-8 w-8 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
-              <p className="mt-4 text-[var(--muted)]">Loading markets from Polymarket...</p>
+              <p className="mt-4 text-[var(--muted)]">Loading markets...</p>
             </div>
           </div>
         )}
@@ -184,7 +245,7 @@ export default function MarketsPage() {
         {/* Empty state */}
         {!loading && !error && filteredMarkets.length === 0 && (
           <div className="text-center py-20 text-[var(--muted)]">
-            No markets found matching your filter.
+            No markets found in this category.
           </div>
         )}
       </div>
@@ -197,11 +258,12 @@ function MarketCard({ market }: { market: EnrichedMarket }) {
   const yesOutcome = market.outcomes.find(o => o.outcome.toLowerCase() === "yes");
   const noOutcome = market.outcomes.find(o => o.outcome.toLowerCase() === "no");
   
+  // Reduced orange glow - only subtle border
   const edgeColor = edge.edgeType === "positive" 
-    ? "border-emerald-500/30 bg-emerald-500/5" 
+    ? "border-emerald-500/20" 
     : edge.edgeType === "negative"
-    ? "border-red-500/30 bg-red-500/5"
-    : "";
+    ? "border-red-500/20"
+    : "border-[var(--border)]";
 
   return (
     <GlowCard className={`p-5 ${edgeColor}`}>
@@ -231,25 +293,25 @@ function MarketCard({ market }: { market: EnrichedMarket }) {
         </div>
       </div>
 
-      {/* Outcomes */}
+      {/* Outcomes - Smaller */}
       <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="rounded-lg border border-[var(--border)] bg-[var(--panel-2)] p-3">
-          <div className="text-xs text-[var(--muted)]">YES</div>
-          <div className="text-xl font-bold text-emerald-400">
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--panel-2)] p-2.5">
+          <div className="text-[10px] text-[var(--muted)]">YES</div>
+          <div className="text-base font-bold text-emerald-400">
             {yesOutcome?.probability || 0}%
           </div>
         </div>
-        <div className="rounded-lg border border-[var(--border)] bg-[var(--panel-2)] p-3">
-          <div className="text-xs text-[var(--muted)]">NO</div>
-          <div className="text-xl font-bold text-red-400">
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--panel-2)] p-2.5">
+          <div className="text-[10px] text-[var(--muted)]">NO</div>
+          <div className="text-base font-bold text-red-400">
             {noOutcome?.probability || 0}%
           </div>
         </div>
       </div>
 
       {/* Edge Signal */}
-      <div className="rounded-lg border border-[var(--border)] bg-[var(--panel-2)] p-3">
-        <div className="flex items-center justify-between mb-2">
+      <div className="rounded-lg border border-[var(--border)] bg-[var(--panel-2)] p-3 mb-3">
+        <div className="flex items-center justify-between mb-3">
           <span className="text-[10px] tracking-[0.2em] text-[var(--muted)]">
             EDGE ENGINE SIGNAL
           </span>
@@ -276,33 +338,83 @@ function MarketCard({ market }: { market: EnrichedMarket }) {
           <span className="text-sm capitalize">{edge.signal.confidence}</span>
         </div>
 
-        {/* Reasons */}
-        <div className="space-y-1 pt-2 border-t border-[var(--border)]">
-          {edge.signal.reasons.slice(0, 2).map((reason, i) => (
-            <div key={i} className="flex items-start gap-2 text-xs text-[var(--muted)]">
-              <span className="text-[var(--accent)]">•</span>
-              <span>{reason}</span>
-            </div>
-          ))}
+        {/* Social Signals - Detailed */}
+        <div className="space-y-2 pt-3 border-t border-[var(--border)]">
+          {edge.signal.signals.map((signal, i) => {
+            const sourceName = signal.source === "x" ? "X" : signal.source === "reddit" ? "Reddit" : "News";
+            const dateStr = new Date(signal.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+            const rating = signal.sentiment > 0.1 ? "YES" : signal.sentiment < -0.1 ? "NO" : "NEUTRAL";
+            const ratingColor = signal.sentiment > 0.1 ? "text-emerald-400" : signal.sentiment < -0.1 ? "text-red-400" : "text-[var(--muted)]";
+            
+            return (
+              <div key={i} className="flex items-start justify-between gap-3 text-xs">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="font-medium">{sourceName}</span>
+                    <span className="text-[var(--muted)]">•</span>
+                    <span className="text-[var(--muted)]">{dateStr}</span>
+                  </div>
+                  <div className="text-[var(--muted)] line-clamp-1">{signal.summary}</div>
+                </div>
+                <div className={`font-semibold ${ratingColor} shrink-0`}>
+                  {rating}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
-
-      {/* Action suggestion */}
-      {edge.suggestedAction !== "wait" && (
-        <div className={`mt-3 p-2 rounded-lg text-center text-sm font-medium ${
-          edge.suggestedAction === "consider_yes"
-            ? "bg-emerald-500/10 text-emerald-400"
-            : edge.suggestedAction === "consider_no"
-            ? "bg-red-500/10 text-red-400"
-            : "bg-[var(--accent)]/10 text-[var(--accent)]"
-        }`}>
-          {edge.suggestedAction === "consider_yes" && "↑ Signal suggests YES"}
-          {edge.suggestedAction === "consider_no" && "↓ Signal suggests NO"}
-          {edge.suggestedAction === "avoid" && "⚠ Negative edge - avoid"}
-        </div>
-      )}
     </GlowCard>
   );
+}
+
+/**
+ * Categorize market based on question keywords
+ */
+function categorizeMarket(question: string): MarketCategory {
+  const lower = question.toLowerCase();
+  
+  // Crypto & Stock
+  const cryptoStockKeywords = [
+    "bitcoin", "btc", "ethereum", "eth", "crypto", "cryptocurrency", "stock", "nasdaq", "s&p", "dow", 
+    "dow jones", "trading", "market", "price", "share", "shares", "equity", "equities", "dollar", "usd",
+    "eur", "euro", "gbp", "pound", "yen", "jpy", "forex", "fx", "coin", "token", "nft", "defi"
+  ];
+  if (cryptoStockKeywords.some(kw => lower.includes(kw))) {
+    return "crypto_stock";
+  }
+  
+  // Politics
+  const politicsKeywords = [
+    "president", "election", "vote", "voting", "senate", "congress", "parliament", "government", 
+    "minister", "candidate", "campaign", "poll", "polls", "democrat", "republican", "party", "political",
+    "trump", "biden", "biden", "kamala", "harris", "policy", "bill", "law", "legislation"
+  ];
+  if (politicsKeywords.some(kw => lower.includes(kw))) {
+    return "politics";
+  }
+  
+  // Sports
+  const sportsKeywords = [
+    "nfl", "nba", "mlb", "nhl", "soccer", "football", "basketball", "baseball", "hockey", "tennis",
+    "golf", "olympics", "championship", "super bowl", "world cup", "match", "game", "team", "player",
+    "champion", "win", "lose", "score", "tournament", "league", "sport"
+  ];
+  if (sportsKeywords.some(kw => lower.includes(kw))) {
+    return "sports";
+  }
+  
+  // Global
+  const globalKeywords = [
+    "war", "conflict", "peace", "treaty", "sanction", "embargo", "nato", "un", "united nations",
+    "climate", "environment", "global warming", "pandemic", "virus", "disease", "health", "crisis",
+    "disaster", "earthquake", "hurricane", "flood", "fire", "international", "world", "global"
+  ];
+  if (globalKeywords.some(kw => lower.includes(kw))) {
+    return "global";
+  }
+  
+  return "other";
 }
 
 function formatCurrency(num: number): string {
@@ -310,4 +422,3 @@ function formatCurrency(num: number): string {
   if (num >= 1_000) return `$${(num / 1_000).toFixed(0)}K`;
   return `$${num.toFixed(0)}`;
 }
-
