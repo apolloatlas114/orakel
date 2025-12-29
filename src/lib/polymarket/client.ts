@@ -5,7 +5,8 @@
  * https://gamma-api.polymarket.com
  */
 
-const GAMMA_API_BASE = "https://gamma-api.polymarket.com";
+// Use custom API if provided, otherwise use public Polymarket API
+const GAMMA_API_BASE = process.env.POLYMARKET_API_URL || "https://gamma-api.polymarket.com";
 
 export interface PolymarketEvent {
   id: string;
@@ -66,7 +67,9 @@ export interface GammaEventsResponse {
 }
 
 /**
- * Fetch active markets from Polymarket
+ * Fetch active markets from Polymarket Gamma API
+ * 
+ * Documentation: https://docs.polymarket.com/developers/gamma-endpoints/markets
  */
 export async function fetchPolymarketMarkets(options?: {
   limit?: number;
@@ -76,25 +79,81 @@ export async function fetchPolymarketMarkets(options?: {
 }): Promise<GammaMarketsResponse> {
   const params = new URLSearchParams();
   
+  // Gamma API uses different parameter names
   if (options?.limit) params.set("limit", String(options.limit));
   if (options?.active !== undefined) params.set("active", String(options.active));
   if (options?.closed !== undefined) params.set("closed", String(options.closed));
-  if (options?.cursor) params.set("next_cursor", options.cursor);
+  if (options?.cursor) params.set("cursor", options.cursor);
   
   const url = `${GAMMA_API_BASE}/markets?${params.toString()}`;
   
-  const res = await fetch(url, {
-    headers: {
-      "Accept": "application/json",
-    },
-    next: { revalidate: 60 }, // Cache for 60 seconds
-  });
+  console.log(`[Polymarket Client] Fetching: ${url}`);
   
-  if (!res.ok) {
-    throw new Error(`Polymarket API error: ${res.status} ${res.statusText}`);
+  const headers: HeadersInit = {
+    "Accept": "application/json",
+    "User-Agent": "Orakel-Edge-Engine/1.0",
+  };
+  
+  // Add API key if provided
+  if (process.env.POLYMARKET_API_KEY) {
+    headers["Authorization"] = `Bearer ${process.env.POLYMARKET_API_KEY}`;
   }
   
-  return res.json();
+  try {
+    const res = await fetch(url, {
+      headers,
+      next: { revalidate: 60 }, // Cache for 60 seconds
+    });
+    
+    if (!res.ok) {
+      const errorText = await res.text().catch(() => res.statusText);
+      console.error(`[Polymarket Client] API error ${res.status}:`, errorText);
+      throw new Error(`Polymarket API error: ${res.status} ${errorText}`);
+    }
+    
+    const data = await res.json();
+    
+    // Handle different response formats
+    // Gamma API might return data directly or wrapped
+    let markets: PolymarketMarket[] = [];
+    let count = 0;
+    let next_cursor = "";
+    
+    if (Array.isArray(data)) {
+      // Direct array response
+      markets = data;
+      count = data.length;
+    } else if (data.data && Array.isArray(data.data)) {
+      // Wrapped response with data property
+      markets = data.data;
+      count = data.count ?? data.data.length;
+      next_cursor = data.next_cursor || data.cursor || "";
+    } else if (data.markets && Array.isArray(data.markets)) {
+      // Alternative structure
+      markets = data.markets;
+      count = data.count ?? data.markets.length;
+      next_cursor = data.next_cursor || data.cursor || "";
+    } else {
+      console.warn("[Polymarket Client] Unexpected response structure:", Object.keys(data));
+      markets = [];
+    }
+    
+    console.log(`[Polymarket Client] Parsed response:`, {
+      marketsFound: markets.length,
+      count,
+      hasNextCursor: !!next_cursor,
+    });
+    
+    return {
+      limit: options?.limit || 20,
+      count,
+      next_cursor,
+      data: markets,
+    };
+  } catch (error) {
+    console.error("[Polymarket Client] Fetch error:", error);
+    throw error;
+  }
 }
 
 /**
@@ -132,18 +191,67 @@ export async function fetchPolymarketEvents(options?: {
 /**
  * Parse outcome prices from market
  * Returns array of probabilities (0-100)
+ * 
+ * Handles different data formats from Polymarket API
  */
 export function parseOutcomePrices(market: PolymarketMarket): { outcome: string; probability: number }[] {
   try {
-    const outcomes = JSON.parse(market.outcomes) as string[];
-    const prices = JSON.parse(market.outcomePrices) as string[];
+    // Handle different formats
+    let outcomes: string[] = [];
+    let prices: string[] = [];
     
-    return outcomes.map((outcome, i) => ({
-      outcome,
-      probability: Math.round(parseFloat(prices[i] || "0") * 100),
-    }));
-  } catch {
-    return [];
+    // Try parsing outcomes
+    if (typeof market.outcomes === "string") {
+      try {
+        outcomes = JSON.parse(market.outcomes);
+      } catch {
+        // Might be comma-separated
+        outcomes = market.outcomes.split(",").map(s => s.trim());
+      }
+    } else if (Array.isArray(market.outcomes)) {
+      outcomes = market.outcomes;
+    }
+    
+    // Try parsing prices
+    if (typeof market.outcomePrices === "string") {
+      try {
+        prices = JSON.parse(market.outcomePrices);
+      } catch {
+        // Might be comma-separated
+        prices = market.outcomePrices.split(",").map(s => s.trim());
+      }
+    } else if (Array.isArray(market.outcomePrices)) {
+      prices = market.outcomePrices;
+    }
+    
+    // Fallback: try to get prices from market object directly
+    if (prices.length === 0 && (market as any).prices) {
+      prices = Array.isArray((market as any).prices) 
+        ? (market as any).prices 
+        : JSON.parse((market as any).prices || "[]");
+    }
+    
+    // If still no outcomes, use defaults
+    if (outcomes.length === 0) {
+      outcomes = ["YES", "NO"];
+    }
+    
+    // Map outcomes to prices
+    return outcomes.map((outcome, i) => {
+      const priceStr = prices[i] || "0";
+      const price = parseFloat(priceStr);
+      return {
+        outcome: outcome.trim(),
+        probability: Math.round((isNaN(price) ? 0 : price) * 100),
+      };
+    });
+  } catch (error) {
+    console.error("[parseOutcomePrices] Error:", error, market);
+    // Return default YES/NO with 50/50
+    return [
+      { outcome: "YES", probability: 50 },
+      { outcome: "NO", probability: 50 },
+    ];
   }
 }
 

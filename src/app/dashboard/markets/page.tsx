@@ -39,16 +39,34 @@ export default function MarketsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/markets?limit=30");
+      console.log("[Markets Page] Fetching markets...");
+      const res = await fetch("/api/markets?limit=30", {
+        cache: "no-store", // Force fresh data
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(errorData.error || `HTTP ${res.status}`);
+      }
+      
       const data: MarketsResponse = await res.json();
+      console.log("[Markets Page] Response:", { success: data.success, count: data.count });
       
       if (!data.success) {
-        throw new Error(data.markets ? "Unknown error" : "Failed to fetch markets");
+        throw new Error((data as any).error || "Failed to fetch markets");
+      }
+      
+      if (!data.markets || data.markets.length === 0) {
+        setError("No markets found. The Polymarket API might be unavailable or returning empty results.");
+        setMarkets([]);
+        return;
       }
       
       setMarkets(data.markets);
     } catch (e) {
+      console.error("[Markets Page] Error:", e);
       setError(e instanceof Error ? e.message : "Failed to load markets");
+      setMarkets([]);
     } finally {
       setLoading(false);
     }
