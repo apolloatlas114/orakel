@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 
@@ -14,12 +15,41 @@ export async function GET() {
 
   try {
     // Lightweight connectivity test
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await (db as any).execute("select 1 as ok");
+    const result = await db.execute(sql`select 1 as ok`);
     return NextResponse.json({ ok: true, result });
   } catch (e) {
-    const message = e instanceof Error ? e.message : "DB error";
-    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+    const err = e instanceof Error ? e : new Error("DB error");
+    const cause = (err as unknown as { cause?: unknown }).cause;
+    const causeObj = (() => {
+      if (!cause || typeof cause !== "object") return undefined;
+
+      const c = cause as Partial<
+        Record<
+          "name" | "message" | "code" | "errno" | "syscall" | "address" | "port",
+          unknown
+        >
+      >;
+
+      // best-effort extraction; do not include connection strings
+      return {
+        name: typeof c.name === "string" ? c.name : undefined,
+        message: typeof c.message === "string" ? c.message : undefined,
+        code: typeof c.code === "string" ? c.code : undefined,
+        errno: typeof c.errno === "number" ? c.errno : undefined,
+        syscall: typeof c.syscall === "string" ? c.syscall : undefined,
+        address: typeof c.address === "string" ? c.address : undefined,
+        port: typeof c.port === "number" ? c.port : undefined,
+      };
+    })();
+
+    return NextResponse.json(
+      {
+        ok: false,
+        error: err.message,
+        cause: causeObj,
+      },
+      { status: 500 },
+    );
   }
 }
 
