@@ -127,7 +127,7 @@ async function searchNewsWithFallback(keywords: string[]): Promise<RSSItem[]> {
           return items.slice(0, 20);
         }
       }
-    } catch (e) {
+    } catch {
       // Try next strategy
       continue;
     }

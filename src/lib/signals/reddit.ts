@@ -75,7 +75,7 @@ function analyzeSentiment(text: string, score: number, numComments: number): num
 /**
  * Fetch Reddit posts from specific subreddits (more reliable than search)
  */
-async function fetchFromSubreddits(keywords: string[]): Promise<RedditPost[]> {
+async function fetchFromSubreddits(keywords: string[]): Promise<RedditPost["data"][]> {
   const relevantSubreddits = [
     "worldnews", "news", "politics", "economics", "business", "stocks", "cryptocurrency",
     "bitcoin", "ethereum", "investing", "wallstreetbets", "sports", "nfl", "nba"
@@ -103,7 +103,7 @@ async function fetchFromSubreddits(keywords: string[]): Promise<RedditPost[]> {
           return posts;
         }
       }
-    } catch (e) {
+    } catch {
       // Try next subreddit
       continue;
     }
