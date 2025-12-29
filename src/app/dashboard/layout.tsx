@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { GlowCard } from "@/components/ui/glow";
 import type { MarketEdgeData } from "@/lib/signals/types";
 import { sentimentLabel, sentimentColor } from "@/lib/signals/types";
@@ -53,7 +54,8 @@ export default function MarketsPage() {
       console.log("[Markets Page] Response:", { success: data.success, count: data.count });
       
       if (!data.success) {
-        throw new Error((data as any).error || "Failed to fetch markets");
+        const errorData = data as { error?: string };
+        throw new Error(errorData.error || "Failed to fetch markets");
       }
       
       if (!data.markets || data.markets.length === 0) {
@@ -206,12 +208,16 @@ function MarketCard({ market }: { market: EnrichedMarket }) {
       {/* Header */}
       <div className="flex items-start gap-4 mb-4">
         {market.image && (
-          <img 
-            src={market.image} 
-            alt="" 
-            className="w-12 h-12 rounded-lg object-cover bg-[var(--panel-2)]"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-          />
+          <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-[var(--panel-2)] shrink-0">
+            <Image
+              src={market.image}
+              alt=""
+              width={48}
+              height={48}
+              className="object-cover"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
+          </div>
         )}
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-white leading-tight line-clamp-2">

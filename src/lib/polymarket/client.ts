@@ -225,10 +225,17 @@ export function parseOutcomePrices(market: PolymarketMarket): { outcome: string;
     }
     
     // Fallback: try to get prices from market object directly
-    if (prices.length === 0 && (market as any).prices) {
-      prices = Array.isArray((market as any).prices) 
-        ? (market as any).prices 
-        : JSON.parse((market as any).prices || "[]");
+    const marketWithPrices = market as PolymarketMarket & { prices?: string | string[] };
+    if (prices.length === 0 && marketWithPrices.prices) {
+      if (Array.isArray(marketWithPrices.prices)) {
+        prices = marketWithPrices.prices;
+      } else if (typeof marketWithPrices.prices === "string") {
+        try {
+          prices = JSON.parse(marketWithPrices.prices);
+        } catch {
+          prices = marketWithPrices.prices.split(",").map(s => s.trim());
+        }
+      }
     }
     
     // If still no outcomes, use defaults
