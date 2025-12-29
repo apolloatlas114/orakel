@@ -23,7 +23,7 @@ Open:
 
 You can copy `env.example` into your local `.env.local` (do not commit secrets).
 
-2) Run the DB migration once (or let Vercel run it on deploy via the build step):
+2) Run the DB migration once (recommended: run migrations from your trusted environment, not during Vercel build):
 
 ```bash
 node scripts/migrate.mjs
@@ -33,7 +33,7 @@ node scripts/migrate.mjs
 
 - Add **Vercel Postgres** to the project (it will inject `DATABASE_URL`)
 - Set `AUTH_SECRET` in Vercel → Project → Settings → Environment Variables
-- Deploy (build runs `node scripts/migrate.mjs && next build`)
+- Deploy (build runs `next build`)
 
 ## Learn More
 
