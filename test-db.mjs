@@ -1,11 +1,16 @@
 import postgres from "postgres";
 
-const url = "postgresql://postgres:Messe2552!!@db.rjqygtuntijzwnwsxzjk.supabase.co:5432/postgres?sslmode=require";
-
-const sql = postgres(url, { ssl: "require" });
+const sql = postgres({
+  host: "aws-1-us-east-1.pooler.supabase.com",
+  port: 5432,
+  database: "postgres",
+  username: "postgres.rjqygtuntijzwnwsxzjk",
+  password: "Messe2552!!",
+  ssl: "require",
+});
 
 try {
-  const result = await sql`SELECT 1 as ok`;
+  const result = await sql`INSERT INTO orakel_users (email, password_hash) VALUES ('local-test@example.com', 'testhash') RETURNING id, email`;
   console.log("OK:", result);
 } catch (e) {
   console.error("FEHLER:", e.message);
