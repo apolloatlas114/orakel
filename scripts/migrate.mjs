@@ -1,8 +1,6 @@
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
-import dns from "node:dns";
-import net from "node:net";
 
 const url =
   process.env.DATABASE_URL ||
@@ -14,9 +12,9 @@ if (!url) {
   process.exit(0);
 }
 
-function shouldUseSsl(url) {
+function shouldUseSsl(dbUrl) {
   try {
-    const u = new URL(url);
+    const u = new URL(dbUrl);
     const host = (u.hostname || "").toLowerCase();
     // Supabase direct DB is often *.supabase.co; pooler is often *.pooler.supabase.com
     if (host.endsWith(".supabase.co") || host.endsWith(".supabase.com")) return true;
@@ -25,33 +23,6 @@ function shouldUseSsl(url) {
   } catch {
     return false;
   }
-}
-
-function shouldForceIpv4(url) {
-  try {
-    const u = new URL(url);
-    const host = (u.hostname || "").toLowerCase();
-    return host.endsWith(".supabase.co") || host.endsWith(".supabase.com");
-  } catch {
-    return false;
-  }
-}
-
-function ipv4OnlySocket() {
-  const s = new net.Socket();
-  const originalConnect = s.connect.bind(s);
-  s.connect = (...args) => {
-    if (typeof args[0] === "number" && typeof args[1] === "string") {
-      return originalConnect({
-        port: args[0],
-        host: args[1],
-        lookup: (hostname, _options, cb) =>
-          dns.lookup(hostname, { family: 4 }, cb),
-      });
-    }
-    return originalConnect(...args);
-  };
-  return s;
 }
 
 /**
@@ -80,7 +51,6 @@ const client = postgres({
   max: 1,
   prepare: false,
   ssl: shouldUseSsl(url) ? "require" : undefined,
-  socket: shouldForceIpv4(url) ? ipv4OnlySocket : undefined,
 });
 const db = drizzle(client);
 
