@@ -73,29 +73,75 @@ function analyzeSentiment(text: string, score: number, numComments: number): num
 }
 
 /**
+ * Fetch Reddit posts from specific subreddits (more reliable than search)
+ */
+async function fetchFromSubreddits(keywords: string[]): Promise<RedditPost[]> {
+  const relevantSubreddits = [
+    "worldnews", "news", "politics", "economics", "business", "stocks", "cryptocurrency",
+    "bitcoin", "ethereum", "investing", "wallstreetbets", "sports", "nfl", "nba"
+  ];
+  
+  const query = keywords.slice(0, 2).join(" "); // Use top 2 keywords
+  
+  // Try multiple subreddits
+  for (const subreddit of relevantSubreddits.slice(0, 5)) {
+    try {
+      const url = `https://www.reddit.com/r/${subreddit}/search.json?q=${encodeURIComponent(query)}&restrict_sr=1&sort=hot&limit=10&t=day`;
+      
+      const response = await fetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "application/json",
+        },
+        next: { revalidate: 300 },
+      });
+      
+      if (response.ok) {
+        const data: RedditResponse = await response.json();
+        const posts = data.data.children.map(p => p.data);
+        if (posts.length > 0) {
+          return posts;
+        }
+      }
+    } catch (e) {
+      // Try next subreddit
+      continue;
+    }
+  }
+  
+  return [];
+}
+
+/**
  * Fetch Reddit posts related to market question
  */
 export async function fetchRedditSignal(marketQuestion: string): Promise<SignalData> {
   try {
     const keywords = extractKeywords(marketQuestion);
-    const query = keywords.join(" OR ");
     
-    // Search Reddit (public API, no auth needed)
-    const url = `https://www.reddit.com/search.json?q=${encodeURIComponent(query)}&sort=hot&limit=25&t=day`;
+    // Strategy 1: Try subreddit search (more reliable)
+    let posts = await fetchFromSubreddits(keywords);
     
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": "Orakel-Edge-Engine/1.0",
-      },
-      next: { revalidate: 300 }, // Cache for 5 minutes
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Reddit API error: ${response.status}`);
+    // Strategy 2: Fallback to general search if subreddit search fails
+    if (posts.length === 0) {
+      const query = keywords.slice(0, 3).join(" OR ");
+      const url = `https://www.reddit.com/search.json?q=${encodeURIComponent(query)}&sort=hot&limit=25&t=day`;
+      
+      const response = await fetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "application/json",
+        },
+        next: { revalidate: 300 },
+      });
+      
+      if (response.ok) {
+        const data: RedditResponse = await response.json();
+        posts = data.data.children.map(p => p.data);
+      } else {
+        throw new Error(`Reddit API error: ${response.status}`);
+      }
     }
-    
-    const data: RedditResponse = await response.json();
-    const posts = data.data.children.map(p => p.data);
     
     if (posts.length === 0) {
       // Fallback: try broader search

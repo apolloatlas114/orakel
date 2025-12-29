@@ -26,46 +26,65 @@ export async function generateMarketEdge(
 ): Promise<MarketEdgeData> {
   const signal = await generateMarketSignal(marketQuestion);
   
-  // Calculate edge score
-  // Positive signal + low yes price = positive edge for YES
-  // Negative signal + high yes price = positive edge for NO
-  const priceDeviation = 0.5 - yesPrice; // How far from 50/50
-  const edgeScore = Math.round(signal.score * 0.6 + priceDeviation * 100 * 0.4);
+  // Calculate edge score based on DIVERGENCE between signal and market
+  // Edge only exists when signal and market disagree!
   
-  const edgeType = edgeScore > 15 ? "positive" : edgeScore < -15 ? "negative" : "neutral";
+  // Convert signal score (-100 to 100) to implied probability (0 to 1)
+  // Positive signal = higher YES probability, negative = lower YES probability
+  const signalImpliedYes = 0.5 + (signal.score / 100) * 0.5; // 0 to 1
   
-  // Determine suggested action based on signal AND market price
-  // Edge = divergence between signal and market price
+  // Calculate divergence: how much does signal differ from market?
+  const divergence = Math.abs(signalImpliedYes - yesPrice);
+  
+  // Edge score: high divergence = high edge potential
+  // But only if signal and market point in different directions
+  const signalDirection = signal.score > 0 ? 1 : signal.score < 0 ? -1 : 0;
+  const marketDirection = yesPrice > 0.5 ? 1 : yesPrice < 0.5 ? -1 : 0;
+  
+  // Edge only if they disagree (different directions)
+  const hasDivergence = signalDirection !== 0 && marketDirection !== 0 && signalDirection !== marketDirection;
+  
+  let edgeScore = 0;
+  let edgeType: "positive" | "neutral" | "negative" = "neutral";
+  
+  if (hasDivergence && divergence > 0.15) {
+    // Strong divergence = positive edge
+    edgeScore = Math.round(divergence * 100);
+    edgeType = "positive";
+  } else if (hasDivergence && divergence > 0.05) {
+    // Moderate divergence = still positive but weaker
+    edgeScore = Math.round(divergence * 50);
+    edgeType = "positive";
+  } else {
+    // No divergence or weak divergence = neutral
+    edgeScore = 0;
+    edgeType = "neutral";
+  }
+  
+  // Determine suggested action based on divergence
   let suggestedAction: MarketEdgeData["suggestedAction"] = "wait";
   
-  if (edgeType === "positive") {
-    // Edge found: Signal diverges from market
-    
-    // Case 1: Market says NO (0-10% YES) but signal is bullish → Edge for NO (market is wrong, bet NO)
-    if (yesPrice < 0.1 && signal.score > 20) {
-      suggestedAction = "consider_no";
-    }
-    // Case 2: Market says YES (90-100% YES) but signal is bearish → Edge for YES (market is wrong, bet YES)
-    else if (yesPrice > 0.9 && signal.score < -20) {
+  if (edgeType === "positive" && hasDivergence) {
+    // Signal bullish but market says NO → Edge for YES
+    if (signal.score > 20 && yesPrice < 0.3) {
       suggestedAction = "consider_yes";
     }
-    // Case 3: Signal bullish, market low (10-50% YES) → Edge for YES (signal suggests market should be higher)
-    else if (signal.score > 20 && yesPrice < 0.5) {
-      suggestedAction = "consider_yes";
-    }
-    // Case 4: Signal bearish, market high (50-90% YES) → Edge for NO (signal suggests market should be lower)
-    else if (signal.score < -20 && yesPrice > 0.5) {
+    // Signal bearish but market says YES → Edge for NO
+    else if (signal.score < -20 && yesPrice > 0.7) {
       suggestedAction = "consider_no";
     }
-    // Case 5: Moderate divergence - wait for clearer signal
+    // Moderate divergence
+    else if (signal.score > 10 && yesPrice < 0.4) {
+      suggestedAction = "consider_yes";
+    }
+    else if (signal.score < -10 && yesPrice > 0.6) {
+      suggestedAction = "consider_no";
+    }
     else {
       suggestedAction = "wait";
     }
-  } else if (edgeType === "negative") {
-    // No clear edge or conflicting signals
-    suggestedAction = "avoid";
   } else {
-    // Neutral edge - no clear divergence
+    // No edge - signal and market agree
     suggestedAction = "wait";
   }
   
