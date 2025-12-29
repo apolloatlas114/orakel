@@ -87,7 +87,7 @@ export async function registerAction(formData: FormData) {
     redirect(`/auth/register?error=${encodeURIComponent(errorMessage(e))}`);
   }
 
-  redirect("/dashboard");
+  redirect("/demo");
 }
 
 export async function loginAction(formData: FormData) {
@@ -136,7 +136,7 @@ export async function loginAction(formData: FormData) {
   });
   const next = formData.get("next");
   const target =
-    typeof next === "string" && next.startsWith("/") ? next : "/dashboard";
+    typeof next === "string" && next.startsWith("/") ? next : "/demo";
   redirect(target);
 }
 
