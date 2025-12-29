@@ -52,7 +52,7 @@ function ipv4OnlySocket() {
 const client = postgres(url, {
   max: 1,
   prepare: false,
-  ssl: shouldUseSsl(url) ? { rejectUnauthorized: true } : undefined,
+  ssl: shouldUseSsl(url) ? "require" : undefined,
   socket: shouldForceIpv4(url) ? ipv4OnlySocket : undefined,
 });
 const db = drizzle(client);

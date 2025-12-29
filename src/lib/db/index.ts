@@ -78,7 +78,9 @@ const client = databaseUrl
         prepare: false,
         max: 5,
         idle_timeout: 20,
-        ssl: shouldUseSsl(databaseUrl) ? { rejectUnauthorized: true } : undefined,
+        // postgres-js recommends ssl: 'require' (it sets rejectUnauthorized=false internally).
+        // This avoids TLS chain issues in serverless/build environments.
+        ssl: shouldUseSsl(databaseUrl) ? ("require" as const) : undefined,
         socket: shouldForceIpv4(databaseUrl) ? ipv4OnlySocket : undefined,
       } as unknown as Parameters<typeof postgres>[1]),
     )
