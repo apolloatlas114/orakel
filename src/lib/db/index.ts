@@ -84,20 +84,42 @@ if (!databaseUrl) {
   );
 }
 
-const client = databaseUrl
-  ? postgres(
-      databaseUrl,
-      ({
-        prepare: false,
-        max: 5,
-        idle_timeout: 20,
-        // postgres-js recommends ssl: 'require' (it sets rejectUnauthorized=false internally).
-        // This avoids TLS chain issues in serverless/build environments.
-        ssl: shouldUseSsl(databaseUrl) ? ("require" as const) : undefined,
-        socket: shouldForceIpv4(databaseUrl) ? ipv4OnlySocket : undefined,
-      } as unknown as Parameters<typeof postgres>[1]),
-    )
-  : null;
+/**
+ * Parse a Postgres URL into individual connection parameters.
+ * This fixes an issue where postgres-js doesn't correctly parse usernames
+ * containing dots (e.g., Supabase pooler usernames like "postgres.projectref").
+ */
+function parsePostgresUrl(url: string) {
+  const parsed = new URL(url);
+  return {
+    host: parsed.hostname,
+    port: parsed.port ? Number(parsed.port) : 5432,
+    database: parsed.pathname.slice(1) || "postgres",
+    username: decodeURIComponent(parsed.username),
+    password: decodeURIComponent(parsed.password),
+  };
+}
+
+function createPostgresClient(url: string) {
+  const params = parsePostgresUrl(url);
+  const useSsl = shouldUseSsl(url);
+  const forceIpv4 = shouldForceIpv4(url);
+
+  return postgres({
+    host: params.host,
+    port: params.port,
+    database: params.database,
+    username: params.username,
+    password: params.password,
+    prepare: false,
+    max: 5,
+    idle_timeout: 20,
+    ssl: useSsl ? ("require" as const) : undefined,
+    socket: forceIpv4 ? ipv4OnlySocket : undefined,
+  });
+}
+
+const client = databaseUrl ? createPostgresClient(databaseUrl) : null;
 
 export const db = client ? drizzle(client, { schema }) : null;
 

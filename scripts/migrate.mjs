@@ -54,7 +54,29 @@ function ipv4OnlySocket() {
   return s;
 }
 
-const client = postgres(url, {
+/**
+ * Parse a Postgres URL into individual connection parameters.
+ * This fixes an issue where postgres-js doesn't correctly parse usernames
+ * containing dots (e.g., Supabase pooler usernames like "postgres.projectref").
+ */
+function parsePostgresUrl(dbUrl) {
+  const parsed = new URL(dbUrl);
+  return {
+    host: parsed.hostname,
+    port: parsed.port ? Number(parsed.port) : 5432,
+    database: parsed.pathname.slice(1) || "postgres",
+    username: decodeURIComponent(parsed.username),
+    password: decodeURIComponent(parsed.password),
+  };
+}
+
+const params = parsePostgresUrl(url);
+const client = postgres({
+  host: params.host,
+  port: params.port,
+  database: params.database,
+  username: params.username,
+  password: params.password,
   max: 1,
   prepare: false,
   ssl: shouldUseSsl(url) ? "require" : undefined,
