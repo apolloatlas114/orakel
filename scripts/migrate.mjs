@@ -1,6 +1,8 @@
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
+import dns from "node:dns";
+import net from "node:net";
 
 const url = process.env.DATABASE_URL;
 if (!url) {
@@ -20,10 +22,38 @@ function shouldUseSsl(url) {
   }
 }
 
+function shouldForceIpv4(url) {
+  try {
+    const u = new URL(url);
+    const host = (u.hostname || "").toLowerCase();
+    return host.endsWith(".supabase.co");
+  } catch {
+    return false;
+  }
+}
+
+function ipv4OnlySocket() {
+  const s = new net.Socket();
+  const originalConnect = s.connect.bind(s);
+  s.connect = (...args) => {
+    if (typeof args[0] === "number" && typeof args[1] === "string") {
+      return originalConnect({
+        port: args[0],
+        host: args[1],
+        lookup: (hostname, _options, cb) =>
+          dns.lookup(hostname, { family: 4 }, cb),
+      });
+    }
+    return originalConnect(...args);
+  };
+  return s;
+}
+
 const client = postgres(url, {
   max: 1,
   prepare: false,
   ssl: shouldUseSsl(url) ? { rejectUnauthorized: true } : undefined,
+  socket: shouldForceIpv4(url) ? ipv4OnlySocket : undefined,
 });
 const db = drizzle(client);
 
