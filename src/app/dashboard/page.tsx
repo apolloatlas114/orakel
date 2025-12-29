@@ -92,22 +92,14 @@ export default function DashboardPage() {
               </h1>
             </div>
 
-            {/* Center: Mode Switch */}
-            <div className="flex items-center gap-1 rounded-xl border border-[var(--border)] bg-[var(--panel-2)] p-1">
-              {(["markets", "sports", "politics"] as Mode[]).map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setMode(m)}
-                  className={`rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
-                    mode === m
-                      ? "bg-[var(--accent)] text-black"
-                      : "text-[var(--muted)] hover:text-white"
-                  }`}
-                >
-                  {m === "politics" ? "Politics & Events" : m.charAt(0).toUpperCase() + m.slice(1)}
-                </button>
-              ))}
-            </div>
+            {/* Center: Referral Button */}
+            <button
+              onClick={() => {/* TODO: Open referral modal */}}
+              className="flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--panel-2)] px-4 py-2 text-sm font-medium text-[var(--muted)] hover:text-white transition-colors"
+            >
+              <span>🔗</span>
+              Referral
+            </button>
 
             {/* Right: Status */}
             <div className={`flex items-center gap-3 rounded-xl px-4 py-2 ${config.bg} border ${config.border}`}>
@@ -120,26 +112,18 @@ export default function DashboardPage() {
 
         {/* Main Content */}
         <div className="p-8">
-          {/* Status Banner */}
-          <GlowCard className="mb-8 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-[10px] tracking-[0.25em] text-[var(--muted)]">
-                  TODAY&apos;S EDGE STATUS
-                </div>
-                <p className="mt-2 text-sm text-[var(--muted)]">{config.description}</p>
+          {/* Status Banner - Compact */}
+          <div className="mb-6 flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--panel-2)] px-4 py-2.5">
+            <div className="flex items-center gap-3">
+              <div className={`text-lg font-bold ${config.color}`}>
+                {edgeStatus === "EDGE_FOUND" ? "✓" : edgeStatus === "EDGE_NEGATIVE" ? "✕" : "○"}
               </div>
-              <div className={`flex items-center gap-4 rounded-2xl px-6 py-4 ${config.bg} border ${config.border}`}>
-                <div className={`text-4xl font-bold ${config.color}`}>
-                  {edgeStatus === "EDGE_FOUND" ? "✓" : edgeStatus === "EDGE_NEGATIVE" ? "✕" : "○"}
-                </div>
-                <div>
-                  <div className={`text-lg font-bold ${config.color}`}>{config.label}</div>
-                  <div className="text-xs text-[var(--muted)]">Decision Permission</div>
-                </div>
+              <div>
+                <div className={`text-sm font-semibold ${config.color}`}>{config.label}</div>
+                <div className="text-xs text-[var(--muted)]">{config.description}</div>
               </div>
             </div>
-          </GlowCard>
+          </div>
 
           {/* Main Grid */}
           <div className="grid gap-6 lg:grid-cols-12">

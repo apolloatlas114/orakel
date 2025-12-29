@@ -40,16 +40,29 @@ export default function MarketsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<MarketCategory | "all">("all");
+  const [edgeFilter, setEdgeFilter] = useState<"all" | "edge" | "no_edge">("all");
+  const [userTier, setUserTier] = useState<"free" | "pro">("free");
 
   useEffect(() => {
     fetchMarkets();
+    fetchUserTier();
   }, []);
+  
+  async function fetchUserTier() {
+    try {
+      const res = await fetch("/api/user/tier");
+      const data = await res.json();
+      setUserTier(data.tier || "free");
+    } catch {
+      setUserTier("free");
+    }
+  }
 
   async function fetchMarkets() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/markets?limit=50", {
+      const res = await fetch("/api/markets?limit=100", {
         cache: "no-store",
       });
       
@@ -109,11 +122,41 @@ export default function MarketsPage() {
     return stats;
   }, [markets]);
 
-  // Filter markets by category
+  // Filter markets by category and edge
   const filteredMarkets = useMemo(() => {
-    if (selectedCategory === "all") return markets;
-    return markets.filter(m => m.category === selectedCategory);
-  }, [markets, selectedCategory]);
+    let filtered = markets;
+    
+    // Category filter
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter(m => m.category === selectedCategory);
+    }
+    
+    // Edge filter
+    if (edgeFilter === "edge") {
+      filtered = filtered.filter(m => m.edge.edgeType === "positive");
+    } else if (edgeFilter === "no_edge") {
+      filtered = filtered.filter(m => m.edge.edgeType !== "positive");
+    }
+    
+    // Free account: only show 3 edge found markets, rest blurred/limited
+    if (userTier === "free") {
+      const edgeMarkets = filtered.filter(m => m.edge.edgeType === "positive");
+      const nonEdgeMarkets = filtered.filter(m => m.edge.edgeType !== "positive");
+      
+      // Show first 3 edge markets + all non-edge markets
+      return [...edgeMarkets.slice(0, 3), ...nonEdgeMarkets];
+    }
+    
+    return filtered;
+  }, [markets, selectedCategory, edgeFilter, userTier]);
+  
+  // Calculate edge found stats
+  const edgeStats = useMemo(() => {
+    const edgeFound = markets.filter(m => m.edge.edgeType === "positive").length;
+    const total = markets.length;
+    const accuracy = total > 0 ? Math.round((edgeFound / total) * 100) : 0;
+    return { edgeFound, total, accuracy };
+  }, [markets]);
 
   const categories: { value: MarketCategory | "all"; label: string }[] = [
     { value: "all", label: "All Markets" },
@@ -138,9 +181,40 @@ export default function MarketsPage() {
             </h1>
           </div>
 
-          {/* Category Filter */}
+          {/* Edge Logic Info */}
+          <div className="flex items-center gap-2 text-xs text-[var(--muted)]">
+            <span>EDGE FOUND:</span>
+            <span>Signal diverges from market price</span>
+            <span>•</span>
+            <span>NEUTRAL:</span>
+            <span>Signal and market agree</span>
+          </div>
+          
+          {/* Filters */}
           <div className="flex items-center gap-2 flex-wrap">
-            {categories.map((cat) => (
+            {/* Edge Filter */}
+            <div className="flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--panel-2)] p-1">
+              {[
+                { value: "all", label: "All" },
+                { value: "edge", label: `Edge Found (${edgeStats.edgeFound})` },
+                { value: "no_edge", label: "No Edge" },
+              ].map((f) => (
+                <button
+                  key={f.value}
+                  onClick={() => setEdgeFilter(f.value as typeof edgeFilter)}
+                  className={`rounded px-2 py-1 text-xs font-medium transition-all ${
+                    edgeFilter === f.value
+                      ? "bg-[var(--accent)] text-black"
+                      : "text-[var(--muted)] hover:text-white"
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+            
+            {/* Category Filter */}
+            {categories.slice(1).map((cat) => (
               <button
                 key={cat.value}
                 onClick={() => setSelectedCategory(cat.value)}
@@ -169,9 +243,33 @@ export default function MarketsPage() {
 
       {/* Content */}
       <div className="p-8">
+        {/* Edge Found Stats (Free Account) */}
+        {userTier === "free" && (
+          <div className="mb-6 rounded-xl border border-[var(--border)] bg-[var(--panel-2)] p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-xs text-[var(--muted)] mb-1">Edge Engine Performance</div>
+                <div className="text-lg font-bold">
+                  {edgeStats.edgeFound} Edge Found Events
+                </div>
+                <div className="text-sm text-[var(--muted)]">
+                  {edgeStats.accuracy}% Accuracy Rate
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-xs text-[var(--muted)] mb-1">Free Account Limit</div>
+                <div className="text-lg font-bold text-[var(--accent)]">3 / ∞</div>
+                <button className="mt-2 rounded-lg bg-[var(--accent)] px-4 py-1.5 text-xs font-medium text-black">
+                  Upgrade to Pro
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* Segment Stats */}
         {selectedCategory === "all" && (
-          <div className="grid grid-cols-5 gap-4 mb-8">
+          <div className="grid grid-cols-5 gap-4 mb-6">
             {[
               { key: "crypto_stock" as MarketCategory, label: "Crypto & Stock" },
               { key: "politics" as MarketCategory, label: "Politics" },
@@ -233,12 +331,19 @@ export default function MarketsPage() {
           </GlowCard>
         )}
 
-        {/* Markets Grid */}
+        {/* Markets Grid - Compact 3 columns */}
         {!loading && !error && (
-          <div className="grid gap-4 lg:grid-cols-2">
-            {filteredMarkets.map((market) => (
-              <MarketCard key={market.id} market={market} />
-            ))}
+          <div className="grid gap-3 lg:grid-cols-3 md:grid-cols-2">
+            {filteredMarkets.map((market, index) => {
+              // Free account: blur markets after first 3 edge found
+              const isBlurred = userTier === "free" && 
+                market.edge.edgeType === "positive" && 
+                filteredMarkets.filter(m => m.edge.edgeType === "positive").indexOf(market) >= 3;
+              
+              return (
+                <MarketCard key={market.id} market={market} isBlurred={isBlurred} />
+              );
+            })}
           </div>
         )}
 
@@ -253,12 +358,11 @@ export default function MarketsPage() {
   );
 }
 
-function MarketCard({ market }: { market: EnrichedMarket }) {
+function MarketCard({ market, isBlurred }: { market: EnrichedMarket; isBlurred?: boolean }) {
   const { edge } = market;
   const yesOutcome = market.outcomes.find(o => o.outcome.toLowerCase() === "yes");
   const noOutcome = market.outcomes.find(o => o.outcome.toLowerCase() === "no");
   
-  // Reduced orange glow - only subtle border
   const edgeColor = edge.edgeType === "positive" 
     ? "border-emerald-500/20" 
     : edge.edgeType === "negative"
@@ -266,26 +370,36 @@ function MarketCard({ market }: { market: EnrichedMarket }) {
     : "border-[var(--border)]";
 
   return (
-    <GlowCard className={`p-5 ${edgeColor}`}>
-      {/* Header */}
-      <div className="flex items-start gap-4 mb-4">
+    <GlowCard className={`p-3 ${edgeColor} ${isBlurred ? "opacity-50 blur-sm" : ""} relative`}>
+      {/* Free Account Overlay */}
+      {isBlurred && (
+        <div className="absolute inset-0 flex items-center justify-center z-10 bg-[var(--bg)]/80 rounded-xl">
+          <div className="text-center p-4">
+            <div className="text-sm font-semibold mb-2">Upgrade to Pro</div>
+            <div className="text-xs text-[var(--muted)]">View unlimited Edge Found events</div>
+          </div>
+        </div>
+      )}
+      
+      {/* Header - Compact */}
+      <div className="flex items-start gap-2.5 mb-2.5">
         {market.image && (
-          <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-[var(--panel-2)] shrink-0">
+          <div className="relative w-8 h-8 rounded overflow-hidden bg-[var(--panel-2)] shrink-0">
             <Image
               src={market.image}
               alt=""
-              width={48}
-              height={48}
+              width={32}
+              height={32}
               className="object-cover"
               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
             />
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-white leading-tight line-clamp-2">
+          <h3 className="text-sm font-semibold text-white leading-tight line-clamp-2">
             {market.question}
           </h3>
-          <div className="flex items-center gap-3 mt-2 text-xs text-[var(--muted)]">
+          <div className="flex items-center gap-2 mt-1 text-[10px] text-[var(--muted)]">
             <span>Vol: {formatCurrency(market.volume)}</span>
             <span>•</span>
             <span>Liq: {formatCurrency(market.liquidity)}</span>
@@ -293,29 +407,29 @@ function MarketCard({ market }: { market: EnrichedMarket }) {
         </div>
       </div>
 
-      {/* Outcomes - Smaller */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="rounded-lg border border-[var(--border)] bg-[var(--panel-2)] p-2.5">
-          <div className="text-[10px] text-[var(--muted)]">YES</div>
-          <div className="text-base font-bold text-emerald-400">
+      {/* Outcomes - Compact */}
+      <div className="grid grid-cols-2 gap-2 mb-2.5">
+        <div className="rounded border border-[var(--border)] bg-[var(--panel-2)] p-1.5">
+          <div className="text-[9px] text-[var(--muted)]">YES</div>
+          <div className="text-sm font-bold text-emerald-400">
             {yesOutcome?.probability || 0}%
           </div>
         </div>
-        <div className="rounded-lg border border-[var(--border)] bg-[var(--panel-2)] p-2.5">
-          <div className="text-[10px] text-[var(--muted)]">NO</div>
-          <div className="text-base font-bold text-red-400">
+        <div className="rounded border border-[var(--border)] bg-[var(--panel-2)] p-1.5">
+          <div className="text-[9px] text-[var(--muted)]">NO</div>
+          <div className="text-sm font-bold text-red-400">
             {noOutcome?.probability || 0}%
           </div>
         </div>
       </div>
 
-      {/* Edge Signal */}
-      <div className="rounded-lg border border-[var(--border)] bg-[var(--panel-2)] p-3 mb-3">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-[10px] tracking-[0.2em] text-[var(--muted)]">
-            EDGE ENGINE SIGNAL
+      {/* Edge Signal - Compact */}
+      <div className="rounded border border-[var(--border)] bg-[var(--panel-2)] p-2">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[9px] tracking-[0.15em] text-[var(--muted)]">
+            EDGE ENGINE
           </span>
-          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
             edge.edgeType === "positive" 
               ? "bg-emerald-500/20 text-emerald-400"
               : edge.edgeType === "negative"
@@ -326,20 +440,20 @@ function MarketCard({ market }: { market: EnrichedMarket }) {
           </span>
         </div>
         
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm">Sentiment</span>
-          <span className={`text-sm font-medium ${sentimentColor(edge.signal.overall)}`}>
+        <div className="flex items-center justify-between mb-1.5 text-xs">
+          <span className="text-[var(--muted)]">Sentiment</span>
+          <span className={`font-medium ${sentimentColor(edge.signal.overall)}`}>
             {sentimentLabel(edge.signal.overall)}
           </span>
         </div>
         
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-sm">Confidence</span>
-          <span className="text-sm capitalize">{edge.signal.confidence}</span>
+        <div className="flex items-center justify-between mb-2 text-xs">
+          <span className="text-[var(--muted)]">Confidence</span>
+          <span className="capitalize">{edge.signal.confidence}</span>
         </div>
 
-        {/* Social Signals - Detailed */}
-        <div className="space-y-2 pt-3 border-t border-[var(--border)]">
+        {/* Social Signals - Compact */}
+        <div className="space-y-1.5 pt-2 border-t border-[var(--border)]">
           {edge.signal.signals.map((signal, i) => {
             const sourceName = signal.source === "x" ? "X" : signal.source === "reddit" ? "Reddit" : "News";
             const dateStr = new Date(signal.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -347,16 +461,16 @@ function MarketCard({ market }: { market: EnrichedMarket }) {
             const ratingColor = signal.sentiment > 0.1 ? "text-emerald-400" : signal.sentiment < -0.1 ? "text-red-400" : "text-[var(--muted)]";
             
             return (
-              <div key={i} className="flex items-start justify-between gap-3 text-xs">
+              <div key={i} className="flex items-start justify-between gap-2 text-[10px]">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
+                  <div className="flex items-center gap-1.5 mb-0.5">
                     <span className="font-medium">{sourceName}</span>
                     <span className="text-[var(--muted)]">•</span>
                     <span className="text-[var(--muted)]">{dateStr}</span>
                   </div>
-                  <div className="text-[var(--muted)] line-clamp-1">{signal.summary}</div>
+                  <div className="text-[var(--muted)] line-clamp-1 text-[9px]">{signal.summary}</div>
                 </div>
-                <div className={`font-semibold ${ratingColor} shrink-0`}>
+                <div className={`font-semibold ${ratingColor} shrink-0 text-[10px]`}>
                   {rating}
                 </div>
               </div>

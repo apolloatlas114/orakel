@@ -7,7 +7,7 @@ export const revalidate = 60; // Cache for 60 seconds
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const limit = Math.min(parseInt(searchParams.get("limit") || "20"), 50);
+  const limit = Math.min(parseInt(searchParams.get("limit") || "100"), 100);
   
   try {
     console.log("[Markets API] Fetching from Polymarket...");
