@@ -18,7 +18,8 @@ function shouldUseSsl(url) {
   try {
     const u = new URL(url);
     const host = (u.hostname || "").toLowerCase();
-    if (host.endsWith(".supabase.co")) return true;
+    // Supabase direct DB is often *.supabase.co; pooler is often *.pooler.supabase.com
+    if (host.endsWith(".supabase.co") || host.endsWith(".supabase.com")) return true;
     if (u.searchParams.get("sslmode") === "require") return true;
     return false;
   } catch {
@@ -30,7 +31,7 @@ function shouldForceIpv4(url) {
   try {
     const u = new URL(url);
     const host = (u.hostname || "").toLowerCase();
-    return host.endsWith(".supabase.co");
+    return host.endsWith(".supabase.co") || host.endsWith(".supabase.com");
   } catch {
     return false;
   }

@@ -27,10 +27,12 @@ export async function GET() {
       "";
     let host: string | undefined;
     let port: number | undefined;
+    let username: string | undefined;
     try {
       const u = new URL(url);
       host = u.hostname;
       port = u.port ? Number(u.port) : undefined;
+      username = u.username || undefined;
     } catch {
       // ignore
     }
@@ -63,6 +65,20 @@ export async function GET() {
         error: err.message,
         host,
         port,
+        hint:
+          host && host.endsWith(".pooler.supabase.com") && port === 6543
+            ? {
+                issue:
+                  "Du nutzt die Supabase Connection Pooler-URL (pgbouncer) auf Port 6543. Wenn TLS/Netzwerk/Username nicht passt, wird die Verbindung oft sofort geschlossen.",
+                tryNext: [
+                  "Teste alternativ die Direct-Connection-URL (Port 5432) aus Supabase Dashboard → Settings → Database → Connection string (URI).",
+                  username && !username.includes(".")
+                    ? "Für den Pooler ist der Username oft im Format `postgres.<project-ref>` (nicht nur `postgres`). Prüfe die Pooler-Connection-String im Supabase Dashboard."
+                    : "Prüfe, ob dein Pooler-Connection-String (inkl. Username) exakt aus Supabase kopiert ist.",
+                  "Wenn du in einem restriktiven Netzwerk bist: Port 6543 kann geblockt sein – Port 5432 funktioniert häufig eher.",
+                ],
+              }
+            : undefined,
         cause: causeObj,
       },
       { status: 500 },
