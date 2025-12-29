@@ -57,7 +57,13 @@ const client = postgres(url, {
 });
 const db = drizzle(client);
 
-await migrate(db, { migrationsFolder: "drizzle" });
+// Supabase can drop connections on DDL that creates new schemas depending on the role/pgbouncer mode.
+// Store drizzle migration bookkeeping in `public` to avoid `CREATE SCHEMA drizzle`.
+await migrate(db, {
+  migrationsFolder: "drizzle",
+  migrationsSchema: "public",
+  migrationsTable: "orakel_drizzle_migrations",
+});
 await client.end();
 
 console.log("[migrate] OK");
