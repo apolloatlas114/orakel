@@ -7,7 +7,20 @@ import net from "node:net";
 
 import * as schema from "./schema";
 
-const databaseUrl = process.env.DATABASE_URL;
+function resolveDatabaseUrl() {
+  // Prefer explicit DATABASE_URL.
+  if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
+
+  // Vercel Postgres provides multiple env vars. Prefer NON_POOLING for serverless
+  // to avoid transaction pooler limitations around prepared statements.
+  if (process.env.POSTGRES_URL_NON_POOLING) return process.env.POSTGRES_URL_NON_POOLING;
+  if (process.env.POSTGRES_URL) return process.env.POSTGRES_URL;
+  if (process.env.POSTGRES_PRISMA_URL) return process.env.POSTGRES_PRISMA_URL;
+
+  return undefined;
+}
+
+const databaseUrl = resolveDatabaseUrl();
 
 function shouldUseSsl(url: string) {
   try {
@@ -67,7 +80,7 @@ function ipv4OnlySocket() {
 if (!databaseUrl) {
   // eslint-disable-next-line no-console
   console.warn(
-    "[db] DATABASE_URL is not set. DB-backed features will be unavailable until configured.",
+    "[db] No database URL configured (DATABASE_URL / POSTGRES_URL*). DB-backed features will be unavailable until configured.",
   );
 }
 

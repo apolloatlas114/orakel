@@ -19,7 +19,12 @@ export async function GET() {
     return NextResponse.json({ ok: true, result });
   } catch (e) {
     const err = e instanceof Error ? e : new Error("DB error");
-    const url = process.env.DATABASE_URL ?? "";
+    const url =
+      process.env.DATABASE_URL ??
+      process.env.POSTGRES_URL_NON_POOLING ??
+      process.env.POSTGRES_URL ??
+      process.env.POSTGRES_PRISMA_URL ??
+      "";
     let host: string | undefined;
     let port: number | undefined;
     try {

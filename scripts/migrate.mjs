@@ -4,9 +4,13 @@ import { migrate } from "drizzle-orm/postgres-js/migrator";
 import dns from "node:dns";
 import net from "node:net";
 
-const url = process.env.DATABASE_URL;
+const url =
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_URL_NON_POOLING ||
+  process.env.POSTGRES_URL ||
+  process.env.POSTGRES_PRISMA_URL;
 if (!url) {
-  console.log("[migrate] DATABASE_URL not set; skipping migrations.");
+  console.log("[migrate] No database URL configured; skipping migrations.");
   process.exit(0);
 }
 
