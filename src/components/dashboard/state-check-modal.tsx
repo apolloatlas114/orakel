@@ -7,28 +7,23 @@ interface StateCheckModalProps {
   onSubmit: (state: UserState) => void;
 }
 
-interface QuestionOption<T> {
-  value: T;
-  label: string;
-}
-
-const energyOptions: QuestionOption<EnergyLevel>[] = [
+const energyOptions: { value: EnergyLevel; label: string }[] = [
   { value: "low", label: "Low" },
   { value: "normal", label: "Normal" },
   { value: "high", label: "High" },
 ];
 
-const clarityOptions: QuestionOption<MentalClarity>[] = [
+const clarityOptions: { value: MentalClarity; label: string }[] = [
   { value: "distracted", label: "Distracted" },
   { value: "focused", label: "Focused" },
 ];
 
-const pressureOptions: QuestionOption<EmotionalPressure>[] = [
+const pressureOptions: { value: EmotionalPressure; label: string }[] = [
   { value: "calm", label: "Calm" },
   { value: "impulsive", label: "Impulsive" },
 ];
 
-const urgeOptions: QuestionOption<UrgeToAct>[] = [
+const urgeOptions: { value: UrgeToAct; label: string }[] = [
   { value: "low", label: "Low" },
   { value: "high", label: "High" },
 ];
@@ -41,34 +36,10 @@ export function StateCheckModal({ onSubmit }: StateCheckModalProps) {
   const [urge, setUrge] = useState<UrgeToAct | null>(null);
 
   const questions = [
-    {
-      title: "Energy Level",
-      subtitle: "How is your physical and mental energy right now?",
-      options: energyOptions,
-      value: energy,
-      setValue: setEnergy,
-    },
-    {
-      title: "Mental Clarity",
-      subtitle: "How clear is your thinking at this moment?",
-      options: clarityOptions,
-      value: clarity,
-      setValue: setClarity,
-    },
-    {
-      title: "Emotional Pressure",
-      subtitle: "Are you feeling emotionally neutral or reactive?",
-      options: pressureOptions,
-      value: pressure,
-      setValue: setPressure,
-    },
-    {
-      title: "Urge to Act",
-      subtitle: "How strong is your desire to make a decision right now?",
-      options: urgeOptions,
-      value: urge,
-      setValue: setUrge,
-    },
+    { title: "Energy Level", subtitle: "How is your physical and mental energy right now?", options: energyOptions, value: energy, setValue: setEnergy },
+    { title: "Mental Clarity", subtitle: "How clear is your thinking at this moment?", options: clarityOptions, value: clarity, setValue: setClarity },
+    { title: "Emotional Pressure", subtitle: "Are you feeling emotionally neutral or reactive?", options: pressureOptions, value: pressure, setValue: setPressure },
+    { title: "Urge to Act", subtitle: "How strong is your desire to make a decision right now?", options: urgeOptions, value: urge, setValue: setUrge },
   ];
 
   const currentQuestion = questions[step];
@@ -77,44 +48,46 @@ export function StateCheckModal({ onSubmit }: StateCheckModalProps) {
 
   const handleNext = () => {
     if (isLastStep && energy && clarity && pressure && urge) {
-      onSubmit({
-        energy,
-        clarity,
-        pressure,
-        urge,
-        timestamp: new Date(),
-      });
+      onSubmit({ energy, clarity, pressure, urge, timestamp: new Date() });
     } else {
       setStep(step + 1);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-      <div className="w-full max-w-lg mx-4">
-        {/* Progress Bar */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-[var(--bg)]/95 backdrop-blur-xl" />
+      
+      {/* Grid Background */}
+      <div className="pointer-events-none absolute inset-0 orakel-grid opacity-30" />
+
+      {/* Modal */}
+      <div className="relative w-full max-w-md mx-4">
+        {/* Progress */}
         <div className="flex gap-2 mb-6">
           {questions.map((_, i) => (
             <div
               key={i}
               className={`h-1 flex-1 rounded-full transition-colors ${
-                i <= step ? "bg-violet-500" : "bg-white/10"
+                i <= step ? "bg-[var(--accent)]" : "bg-[var(--border)]"
               }`}
+              style={{ boxShadow: i <= step ? "0 0 10px var(--glow)" : "none" }}
             />
           ))}
         </div>
 
         {/* Card */}
-        <div className="bg-[#12121a] border border-white/10 rounded-2xl p-8">
+        <div className="orakel-glow rounded-2xl border border-[var(--border)] bg-[var(--panel)] p-8">
           {/* Header */}
           <div className="text-center mb-8">
-            <p className="text-xs font-medium text-violet-400 uppercase tracking-wider mb-2">
-              Current State Check
-            </p>
-            <h2 className="text-2xl font-bold text-white mb-2">
+            <div className="text-[10px] tracking-[0.25em] text-[var(--accent)] mb-3">
+              STATE CHECK • {step + 1}/{questions.length}
+            </div>
+            <h2 className="text-2xl font-semibold tracking-tight mb-2">
               {currentQuestion?.title}
             </h2>
-            <p className="text-white/50">
+            <p className="text-sm text-[var(--muted)]">
               {currentQuestion?.subtitle}
             </p>
           </div>
@@ -127,9 +100,12 @@ export function StateCheckModal({ onSubmit }: StateCheckModalProps) {
                 onClick={() => currentQuestion.setValue(option.value as never)}
                 className={`w-full p-4 rounded-xl border text-left transition-all ${
                   currentQuestion.value === option.value
-                    ? "bg-violet-500/20 border-violet-500 text-white"
-                    : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-white/20"
+                    ? "bg-[var(--accent)]/10 border-[var(--accent)] text-white"
+                    : "bg-[var(--panel-2)] border-[var(--border)] text-[var(--muted)] hover:bg-white/[0.04] hover:border-white/20"
                 }`}
+                style={{
+                  boxShadow: currentQuestion.value === option.value ? "0 0 20px var(--glow-2)" : "none"
+                }}
               >
                 <span className="font-medium">{option.label}</span>
               </button>
@@ -141,26 +117,34 @@ export function StateCheckModal({ onSubmit }: StateCheckModalProps) {
             <button
               onClick={() => setStep(Math.max(0, step - 1))}
               disabled={step === 0}
-              className="px-4 py-2 text-sm text-white/50 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+              className="px-4 py-2 text-sm text-[var(--muted)] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
             >
               Back
             </button>
             <button
               onClick={handleNext}
               disabled={!canProceed}
-              className="px-6 py-2.5 bg-violet-600 hover:bg-violet-500 disabled:bg-white/10 disabled:text-white/30 rounded-lg font-medium transition-colors"
+              className="px-6 py-2.5 bg-[var(--accent)] text-black rounded-xl font-semibold hover:brightness-110 disabled:bg-[var(--panel-2)] disabled:text-[var(--muted)] transition"
             >
               {isLastStep ? "Start Session" : "Continue"}
             </button>
           </div>
 
-          {/* Timer hint */}
-          <p className="text-center text-xs text-white/30 mt-6">
-            Quick check • Takes about 8 seconds
+          {/* Timer */}
+          <p className="text-center text-xs text-[var(--muted)] mt-6">
+            Quick check • ~8 seconds
           </p>
+        </div>
+
+        {/* Branding */}
+        <div className="text-center mt-6">
+          <div className="text-[10px] tracking-[0.25em] text-[var(--muted)]">ORAKEL</div>
+          <div className="text-sm font-semibold">
+            <span className="text-white">EDGE</span>{" "}
+            <span className="text-[var(--accent)]">ENGINE</span>
+          </div>
         </div>
       </div>
     </div>
   );
 }
-

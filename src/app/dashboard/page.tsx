@@ -1,14 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { DashboardHeader } from "@/components/dashboard/header";
+import { GlowCard } from "@/components/ui/glow";
 import { StateCheckModal } from "@/components/dashboard/state-check-modal";
-import { AIContextSignal } from "@/components/dashboard/ai-context-signal";
-import { EdgeEngineCore } from "@/components/dashboard/edge-engine-core";
-import { DecisionInput } from "@/components/dashboard/decision-input";
-import { EdgeZones } from "@/components/dashboard/edge-zones";
-import { DecisionHistory } from "@/components/dashboard/decision-history";
-import { ConfidenceCalibration } from "@/components/dashboard/confidence-calibration";
 
 export type EdgeStatus = "EDGE_FOUND" | "NO_EDGE" | "EDGE_NEGATIVE";
 export type Mode = "markets" | "sports" | "politics";
@@ -25,127 +19,51 @@ export interface UserState {
   timestamp: Date;
 }
 
-export interface AISignal {
-  signal: "BULLISH" | "SLIGHTLY_BULLISH" | "NEUTRAL" | "SLIGHTLY_BEARISH" | "BEARISH";
-  confidence: "low" | "moderate" | "high";
-  reasons: string[];
-  sources: {
-    x: { sentiment: number; velocity: number };
-    reddit: { sentiment: number; topics: string[] };
-    news: { sentiment: number; headlines: string[] };
-  };
-}
-
-export interface EdgeZone {
-  condition: string;
-  impact: number; // positive or negative percentage
-  description: string;
-}
-
-export interface Decision {
-  id: string;
-  context: string;
-  expectedOutcome: string;
-  confidence: number;
-  state: UserState;
-  edgeStatus: EdgeStatus;
-  timestamp: Date;
-  outcome?: "correct" | "incorrect";
-  qualityScore?: number;
-}
-
-// Mock data for initial development
-const mockAISignal: AISignal = {
-  signal: "SLIGHTLY_BEARISH",
-  confidence: "moderate",
-  reasons: [
-    "Increased negative sentiment detected on X within the last 4 hours",
-    "Reddit discussions show rising uncertainty",
-    "Recent news headlines emphasize downside risks",
-  ],
-  sources: {
-    x: { sentiment: -0.23, velocity: 1.4 },
-    reddit: { sentiment: -0.18, topics: ["volatility", "uncertainty", "correction"] },
-    news: { sentiment: -0.31, headlines: ["Markets face headwinds", "Analysts warn of pullback"] },
+const edgeConfig = {
+  EDGE_FOUND: {
+    label: "EDGE FOUND",
+    color: "text-emerald-400",
+    bg: "bg-emerald-500/10",
+    border: "border-emerald-500/30",
+    description: "Your historical data shows a statistically favorable decision setup.",
+  },
+  NO_EDGE: {
+    label: "NO EDGE",
+    color: "text-[var(--accent)]",
+    bg: "bg-[var(--accent)]/10",
+    border: "border-[var(--accent)]/30",
+    description: "No statistically meaningful edge detected for you at this time.",
+  },
+  EDGE_NEGATIVE: {
+    label: "EDGE NEGATIVE",
+    color: "text-red-400",
+    bg: "bg-red-500/10",
+    border: "border-red-500/30",
+    description: "In similar situations, your decisions historically underperform.",
   },
 };
-
-const mockPositiveZones: EdgeZone[] = [
-  { condition: "Confidence 62–74%", impact: 18, description: "Sweet spot for your decision accuracy" },
-  { condition: "Focused state", impact: 11, description: "Mental clarity improves outcomes" },
-  { condition: "Low urge to act", impact: 8, description: "Patience correlates with better decisions" },
-];
-
-const mockNegativeZones: EdgeZone[] = [
-  { condition: "Confidence above 85%", impact: -23, description: "Overconfidence reduces accuracy" },
-  { condition: "Impulsive state", impact: -19, description: "Emotional pressure hurts decisions" },
-  { condition: "High urge to act", impact: -14, description: "FOMO correlates with poor outcomes" },
-];
-
-const mockDecisions: Decision[] = [
-  {
-    id: "1",
-    context: "Tech sector momentum",
-    expectedOutcome: "Continued uptrend",
-    confidence: 78,
-    state: { energy: "normal", clarity: "focused", pressure: "calm", urge: "low", timestamp: new Date(Date.now() - 86400000) },
-    edgeStatus: "EDGE_FOUND",
-    timestamp: new Date(Date.now() - 86400000),
-    outcome: "correct",
-    qualityScore: 82,
-  },
-  {
-    id: "2",
-    context: "Earnings play",
-    expectedOutcome: "Beat expectations",
-    confidence: 91,
-    state: { energy: "high", clarity: "distracted", pressure: "impulsive", urge: "high", timestamp: new Date(Date.now() - 172800000) },
-    edgeStatus: "EDGE_NEGATIVE",
-    timestamp: new Date(Date.now() - 172800000),
-    outcome: "incorrect",
-    qualityScore: 34,
-  },
-];
 
 export default function DashboardPage() {
   const [mode, setMode] = useState<Mode>("markets");
   const [showStateCheck, setShowStateCheck] = useState(true);
   const [userState, setUserState] = useState<UserState | null>(null);
   const [edgeStatus, setEdgeStatus] = useState<EdgeStatus>("NO_EDGE");
-  const [stateImpact, setStateImpact] = useState<string | null>(null);
 
-  // Calculate edge status based on user state
   useEffect(() => {
     if (!userState) return;
-
     let score = 0;
-    
-    // Energy impact
     if (userState.energy === "normal") score += 1;
     if (userState.energy === "low") score -= 1;
-    
-    // Clarity impact
     if (userState.clarity === "focused") score += 2;
     if (userState.clarity === "distracted") score -= 2;
-    
-    // Pressure impact
     if (userState.pressure === "calm") score += 1;
     if (userState.pressure === "impulsive") score -= 2;
-    
-    // Urge impact
     if (userState.urge === "low") score += 1;
     if (userState.urge === "high") score -= 2;
 
-    if (score >= 3) {
-      setEdgeStatus("EDGE_FOUND");
-      setStateImpact("No negative state impact detected.");
-    } else if (score <= -2) {
-      setEdgeStatus("EDGE_NEGATIVE");
-      setStateImpact("In this state, your historical accuracy decreases by 21%.");
-    } else {
-      setEdgeStatus("NO_EDGE");
-      setStateImpact("No statistically meaningful edge detected for you at this time.");
-    }
+    if (score >= 3) setEdgeStatus("EDGE_FOUND");
+    else if (score <= -2) setEdgeStatus("EDGE_NEGATIVE");
+    else setEdgeStatus("NO_EDGE");
   }, [userState]);
 
   const handleStateSubmit = (state: UserState) => {
@@ -153,71 +71,264 @@ export default function DashboardPage() {
     setShowStateCheck(false);
   };
 
-  const handleLogDecision = (decision: Omit<Decision, "id" | "state" | "edgeStatus" | "timestamp">) => {
-    // In real app, this would save to DB
-    console.log("Decision logged:", decision);
-  };
+  const config = edgeConfig[edgeStatus];
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
-      {/* State Check Modal - mandatory on login */}
-      {showStateCheck && (
-        <StateCheckModal onSubmit={handleStateSubmit} />
-      )}
+    <div className="min-h-screen">
+      {/* State Check Modal */}
+      {showStateCheck && <StateCheckModal onSubmit={handleStateSubmit} />}
 
-      {/* Main Dashboard */}
       <div className={showStateCheck ? "blur-sm pointer-events-none" : ""}>
-        {/* Global Header */}
-        <DashboardHeader
-          edgeStatus={edgeStatus}
-          mode={mode}
-          onModeChange={setMode}
-        />
+        {/* Header */}
+        <header className="sticky top-0 z-30 border-b border-[var(--border)] bg-[var(--bg)]/80 backdrop-blur-xl">
+          <div className="flex items-center justify-between px-8 py-4">
+            {/* Left: Title */}
+            <div>
+              <div className="text-[10px] tracking-[0.25em] text-[var(--muted)]">
+                DECISION INTELLIGENCE
+              </div>
+              <h1 className="text-xl font-semibold tracking-tight">
+                Edge Engine
+              </h1>
+            </div>
+
+            {/* Center: Mode Switch */}
+            <div className="flex items-center gap-1 rounded-xl border border-[var(--border)] bg-[var(--panel-2)] p-1">
+              {(["markets", "sports", "politics"] as Mode[]).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setMode(m)}
+                  className={`rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
+                    mode === m
+                      ? "bg-[var(--accent)] text-black"
+                      : "text-[var(--muted)] hover:text-white"
+                  }`}
+                >
+                  {m === "politics" ? "Politics & Events" : m.charAt(0).toUpperCase() + m.slice(1)}
+                </button>
+              ))}
+            </div>
+
+            {/* Right: Status */}
+            <div className={`flex items-center gap-3 rounded-xl px-4 py-2 ${config.bg} border ${config.border}`}>
+              <div className={`h-2 w-2 rounded-full ${edgeStatus === "EDGE_FOUND" ? "bg-emerald-400" : edgeStatus === "EDGE_NEGATIVE" ? "bg-red-400" : "bg-[var(--accent)]"}`} 
+                style={{ boxShadow: `0 0 12px currentColor` }} />
+              <span className={`text-sm font-semibold ${config.color}`}>{config.label}</span>
+            </div>
+          </div>
+        </header>
 
         {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-4 py-8 space-y-8">
-          {/* Top Row: AI Signal + Edge Core */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <AIContextSignal signal={mockAISignal} />
-            <EdgeEngineCore
-              edgeStatus={edgeStatus}
-              userState={userState}
-              stateImpact={stateImpact}
-            />
-          </div>
+        <div className="p-8">
+          {/* Status Banner */}
+          <GlowCard className="mb-8 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-[10px] tracking-[0.25em] text-[var(--muted)]">
+                  TODAY&apos;S EDGE STATUS
+                </div>
+                <p className="mt-2 text-sm text-[var(--muted)]">{config.description}</p>
+              </div>
+              <div className={`flex items-center gap-4 rounded-2xl px-6 py-4 ${config.bg} border ${config.border}`}>
+                <div className={`text-4xl font-bold ${config.color}`}>
+                  {edgeStatus === "EDGE_FOUND" ? "✓" : edgeStatus === "EDGE_NEGATIVE" ? "✕" : "○"}
+                </div>
+                <div>
+                  <div className={`text-lg font-bold ${config.color}`}>{config.label}</div>
+                  <div className="text-xs text-[var(--muted)]">Decision Permission</div>
+                </div>
+              </div>
+            </div>
+          </GlowCard>
 
-          {/* Middle Row: Decision Input + Confidence Calibration */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <DecisionInput
-              onSubmit={handleLogDecision}
-              userState={userState}
-              edgeStatus={edgeStatus}
-            />
-            <ConfidenceCalibration
-              userConfidence={78}
-              historicalAccuracy={57}
-            />
-          </div>
+          {/* Main Grid */}
+          <div className="grid gap-6 lg:grid-cols-12">
+            {/* Left Column */}
+            <div className="space-y-6 lg:col-span-7">
+              {/* AI Context Signal */}
+              <GlowCard className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <div className="text-[10px] tracking-[0.25em] text-[var(--muted)]">
+                      AI CONTEXT SIGNAL
+                    </div>
+                    <div className="mt-1 text-lg font-semibold">Public Information Flow</div>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--panel-2)] px-3 py-1 text-xs text-[var(--muted)]">
+                    <span className="h-2 w-2 rounded-full bg-[var(--accent)] shadow-[0_0_12px_var(--glow)]" />
+                    Live
+                  </div>
+                </div>
 
-          {/* Edge Zones */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <EdgeZones
-              title="Positive Edge Zones"
-              zones={mockPositiveZones}
-              type="positive"
-            />
-            <EdgeZones
-              title="Negative Edge Zones"
-              zones={mockNegativeZones}
-              type="negative"
-            />
-          </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-xl border border-[var(--border)] bg-[var(--panel-2)] p-4">
+                    <div className="text-xs text-[var(--muted)]">Current Signal</div>
+                    <div className="mt-1 text-xl font-bold text-[var(--accent)]">SLIGHTLY BEARISH</div>
+                  </div>
+                  <div className="rounded-xl border border-[var(--border)] bg-[var(--panel-2)] p-4">
+                    <div className="text-xs text-[var(--muted)]">Confidence Range</div>
+                    <div className="mt-1 text-xl font-bold">Moderate</div>
+                  </div>
+                </div>
 
-          {/* Decision History */}
-          <DecisionHistory decisions={mockDecisions} />
-        </main>
+                <div className="mt-4 space-y-2">
+                  {[
+                    "Increased negative sentiment detected on X within the last 4 hours",
+                    "Reddit discussions show rising uncertainty",
+                    "Recent news headlines emphasize downside risks",
+                  ].map((reason, i) => (
+                    <div key={i} className="flex items-start gap-3 text-sm text-[var(--muted)]">
+                      <span className="text-[var(--accent)]">•</span>
+                      <span>{reason}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-[var(--border)] text-xs text-[var(--muted)]">
+                  This signal reflects aggregated public information. It is not a recommendation or forecast.
+                </div>
+              </GlowCard>
+
+              {/* Edge Zones */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <GlowCard className="p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-emerald-400">↑</span>
+                    <span className="text-[10px] tracking-[0.2em] text-[var(--muted)]">POSITIVE EDGE ZONES</span>
+                  </div>
+                  <div className="space-y-2">
+                    {[
+                      { cond: "Confidence 62–74%", impact: "+18%" },
+                      { cond: "Focused state", impact: "+11%" },
+                      { cond: "Low urge to act", impact: "+8%" },
+                    ].map((z) => (
+                      <div key={z.cond} className="flex items-center justify-between rounded-lg bg-emerald-500/5 border border-emerald-500/20 px-3 py-2">
+                        <span className="text-sm">{z.cond}</span>
+                        <span className="text-sm font-bold text-emerald-400">{z.impact}</span>
+                      </div>
+                    ))}
+                  </div>
+                </GlowCard>
+
+                <GlowCard className="p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-red-400">↓</span>
+                    <span className="text-[10px] tracking-[0.2em] text-[var(--muted)]">NEGATIVE EDGE ZONES</span>
+                  </div>
+                  <div className="space-y-2">
+                    {[
+                      { cond: "Confidence above 85%", impact: "–23%" },
+                      { cond: "Impulsive state", impact: "–19%" },
+                      { cond: "High urge to act", impact: "–14%" },
+                    ].map((z) => (
+                      <div key={z.cond} className="flex items-center justify-between rounded-lg bg-red-500/5 border border-red-500/20 px-3 py-2">
+                        <span className="text-sm">{z.cond}</span>
+                        <span className="text-sm font-bold text-red-400">{z.impact}</span>
+                      </div>
+                    ))}
+                  </div>
+                </GlowCard>
+              </div>
+            </div>
+
+            {/* Right Column */}
+            <div className="space-y-6 lg:col-span-5">
+              {/* Current State */}
+              {userState && (
+                <GlowCard className="p-5">
+                  <div className="text-[10px] tracking-[0.25em] text-[var(--muted)] mb-3">
+                    CURRENT STATE
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { label: "Energy", value: userState.energy },
+                      { label: "Clarity", value: userState.clarity },
+                      { label: "Pressure", value: userState.pressure },
+                      { label: "Urge", value: userState.urge },
+                    ].map((s) => {
+                      const isNegative = s.value === "distracted" || s.value === "impulsive" || s.value === "high" || s.value === "low";
+                      return (
+                        <div key={s.label} className="rounded-xl border border-[var(--border)] bg-[var(--panel-2)] p-3">
+                          <div className="text-xs text-[var(--muted)]">{s.label}</div>
+                          <div className={`mt-1 text-sm font-medium capitalize ${isNegative ? "text-[var(--accent)]" : "text-emerald-400"}`}>
+                            {s.value}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <button
+                    onClick={() => setShowStateCheck(true)}
+                    className="mt-3 w-full rounded-xl border border-[var(--border)] bg-[var(--panel-2)] py-2 text-sm text-[var(--muted)] hover:text-white transition-colors"
+                  >
+                    Update State
+                  </button>
+                </GlowCard>
+              )}
+
+              {/* Confidence Calibration */}
+              <GlowCard className="p-5">
+                <div className="text-[10px] tracking-[0.25em] text-[var(--muted)] mb-3">
+                  CONFIDENCE CALIBRATION
+                </div>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="rounded-xl border border-[var(--border)] bg-[var(--panel-2)] p-3 text-center">
+                    <div className="text-xs text-[var(--muted)]">Your Confidence</div>
+                    <div className="mt-1 text-2xl font-bold">78%</div>
+                  </div>
+                  <div className="rounded-xl border border-[var(--border)] bg-[var(--panel-2)] p-3 text-center">
+                    <div className="text-xs text-[var(--muted)]">Historical Accuracy</div>
+                    <div className="mt-1 text-2xl font-bold text-[var(--accent)]">57%</div>
+                  </div>
+                </div>
+                <div className="rounded-xl bg-[var(--accent)]/10 border border-[var(--accent)]/20 p-3">
+                  <p className="text-sm text-[var(--accent)]">
+                    You tend to overestimate accuracy at higher confidence levels.
+                  </p>
+                </div>
+              </GlowCard>
+
+              {/* Log Decision */}
+              <GlowCard className="p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-[10px] tracking-[0.25em] text-[var(--muted)]">
+                    LOG A DECISION
+                  </div>
+                  <span className="text-xs text-[var(--muted)]">Optional</span>
+                </div>
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    placeholder="Context / Topic"
+                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--panel-2)] px-4 py-2.5 text-sm placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--accent)]/50"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Expected Outcome"
+                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--panel-2)] px-4 py-2.5 text-sm placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--accent)]/50"
+                  />
+                  <div>
+                    <div className="flex justify-between text-xs text-[var(--muted)] mb-1">
+                      <span>Confidence</span>
+                      <span>50%</span>
+                    </div>
+                    <input
+                      type="range"
+                      className="w-full h-1.5 bg-[var(--panel-2)] rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--accent)]"
+                    />
+                  </div>
+                  <button className="w-full rounded-xl bg-[var(--accent)] py-2.5 text-sm font-semibold text-black hover:brightness-110 transition">
+                    Log Decision
+                  </button>
+                </div>
+                <p className="mt-3 text-xs text-[var(--muted)] text-center">
+                  Logging decisions improves your personal edge model.
+                </p>
+              </GlowCard>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
-
